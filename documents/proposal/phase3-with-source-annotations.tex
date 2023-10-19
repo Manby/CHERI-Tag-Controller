@@ -1,0 +1,282 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[left=2cm, right=2cm]{geometry}
+\setlength{\parindent}{0pt}
+\usepackage{parskip}
+\usepackage[super]{nth}
+\usepackage[natbib=true,sorting=none,style=numeric,backend=biber,useprefix=true]{biblatex}
+
+\addbibresource{cites.bib}
+\AtBeginBibliography{}
+
+\DeclareBibliographyCategory{mandatory}
+\addtocategory{mandatory}{joannou2017efficient}
+\addtocategory{mandatory}{mayer1982architecture}
+\addtocategory{mandatory}{sysvertutor}
+\addtocategory{mandatory}{drcachesim}
+
+\begin{document}
+
+
+{\centering \Large Computer Science Tripos -- Part II -- Project Proposal\par}
+\vspace{1cm}
+{\centering \Huge Next Generation CHERI Tag Controller\par}
+\vspace{1.5cm}
+{\centering \large Kofi Wilkinson, Homerton College\par}
+{\centering \large Project Originator: Dr Jonathan Woodruff\par}
+{\centering \large \nth{16} October 2023\par}
+\vspace{1.5cm}
+
+%\begin{tabular}{ll}
+%\textbf{Project Supervisor:} & Dr Jonathan Woodruff\\
+%\textbf{Director of Studies:} & Dr John Fawcett\\
+%\textbf{Project Checkers:} & Prof. Alan Blackwell \& Prof. Srinivasan Keshav
+%\end{tabular}
+
+\textbf{Project Supervisor:} Dr Jonathan Woodruff\par
+\textbf{Director of Studies:} Dr John Fawcett\par
+\textbf{Project Checkers:} Prof. Alan Blackwell \& Prof. Srinivasan Keshav
+\vspace{2cm}
+
+
+\section*{Introduction}
+\subsection*{Background}
+The paper \textit{Efficient Tagged Memory} \cite{joannou2017efficient} describes how tagged memory architectures have been explored in academia and employed in industry many times with various different focuses throughout the history of computer design. Through both academic rigour and market testing, they have been proven to provide system-wide security properties, such as hardware capabilities, pointer integrity, watchpoints, and information-flow tracking [SOURCE?]. The paper continues to explain how single-bit tag (SBT) shadowspaces are sufficient to provide these properties, as one bit is enough to distinguish between data that has been manipulated by untrusted code, and data that retains the integrity of only being written by a program running through a trusted path of execution, and with this we can define as many new hardware-enforced types as we might need.\\
+Section III of the paper describes four different approaches to implementing tagged memory. A direct quote of this list is as follows:
+\begin{itemize}
+\item \textit{width} -- Store tag bits in a wider physical memory, e.g., 65-bit words.
+\item \textit{in-page} -- Store tag bits in borrowed bytes of DRAM pages, slightly shrinking each DRAM page and skewing the DRAM address mapping.
+\item \textit{dedicated} -- Store tag bits in a dedicated memory.
+\item \textit{table} -- Store tag bits in a table in DRAM.
+\end{itemize}
+As the paper then explains, the \textit{width} option is conceptually the simplest as its only unique requirement is to widen the system memory and buses. This approach has been taken before, e.g.\ by the Burroughs B6000 \cite{mayer1982architecture}, however, power-of-two memory systems dominate today's industry, making this approach infeasible for an SBT architecture.\\
+The \textit{in-page} option leads to a fragmented tag shadowspace, limiting both tag cacheline size and spatial locality benefits. The \textit{dedicated} option would require its own memory subsystem, complete with a dedicated interface and discrete chips, which brings too much design, area and power overhead for most applications.\\
+This leaves the \textit{table} option, and it is this that the rest of the paper concerns itself with optimising due to its practicality from having relatively little overhead. The overhead can be reduced by making the tag table more cacheable to decrease the frequency of suffering DRAM latency penalties. The tag table memory accesses and tag caching are all handled by a hardware tag controller, which determines the algorithm by which tags are read and written during execution.\\
+Architectures that employ a tag table will statically allocate a region of DRAM at boot-time to act as the tag cache. This of course results in a static memory cost, which is typically acceptable for client applications, but unacceptable for server/cloud applications, according to feedback from industry [SOURCE?]. Different approaches of caching tags have been explored [any more other than hierarchical; SOURCE?], which aim to reduce the DRAM tag table access frequency, but they do not address the constant DRAM space consumption overhead of the tag table itself. \textit{Efficient Tagged Memory} details a hierarchical lookup scheme that compresses tags within the tag cache, thus storing more information about the tag table within the tag cache, further increasing tag cache hit rate, but it in fact has the effect of increasing the constant DRAM space consumption slightly due to the addition of a first-layer.\\
+
+\subsection*{Project Focus}
+An idea that has not yet been explored comprehensively in literature is dynamic allocation of shadowspace for the tag table. Doing this would allow the following techniques to be used to reduce the tag table's DRAM space consumption:
+\begin{itemize}
+\item We could request only as much tag memory as is required for the current workload and free it once it is no longer required.
+\item We could compress the tag table in DRAM, and then free the extra saved space out to the rest of the system.
+\end{itemize}
+Dynamic allocation of DRAM is something that a hypervisor could possibly manage. How such a system might work is not the focus of my project, but mechanisms for dynamic allocation exist [SOURCE?].\\
+If a substantial amount of space can be saved by the two mentioned techniques, tag table implementations of memory, and subsequently tagged memory architectures, would take a significant step towards becoming viable for use in server/cloud applications, meaning that the aforementioned benefits they have provided to client applications can also be brought to these industries.
+
+\section*{Starting Point}
+\begin{itemize}
+	\item I have read the paper \textit{Efficient Tagged Memory}.
+	\item I completed the Cambridge SystemVerilog Tutor \cite{sysvertutor} and performed the mandatory tasks 1 and 5 for the Part IB tick, providing me with some HDL experience with SystemVerilog. I also completed the optional task 2a, providing me with an introduction to HDL simulation with ModelSim.
+	\item Over the summer of 2023 I interned at Arm in the Morello Kernel Team, a team working to port the Linux kernel to Arm's Morello architecture, which is based on the CHERI model. This gave me a chance to get more familiar with the CHERI model, and provided me with an understanding of how a CHERI tagged memory architecture might structure its pointers, and how tag shadowspace might be laid out and accessed in DRAM.
+\end{itemize}
+
+\section*{Substance and Structure}
+My project has several distinct but related objectives. The order in which I have listed the objectives is the order in which it makes sense to tackle them.
+
+Throughout this project I will be focusing on SBT architectures due to their preference in industry [SOURCE?] and their simplicity. I will be focusing particularly on the CHERI architecture, as this is a speciality of the university and of my supervisor, and it is also the tagged memory architecture I am most familiar with, thanks to my aforementioned summer internship. Much of my work and findings however will be transferable to other tagged memory architectures.
+
+\subsection*{Tag Controller Simulator and Algorithm Analysis (Core)}
+The \textbf{core} objective for my project is to develop a tag controller simulator that can be used to evaluate two existing algorithms for tag table storage. Given a workload, it should be able to determine the state of the tag cache and tag table at any point during program execution, the tag cache's hit ratio, the DRAM tag table access frequency and the overall execution stall time due to DRAM access latency.
+
+I intend to develop the simulator in C++ for the following reasons:
+\begin{itemize}
+	\item I am familiar with it from the IB Programming in C and C++ course and from contributing to the development of my IB group project in C++.
+	\item It is a highly performant language which is important when parsing and simulating very large memory access traces.
+	\item The traces are in a format which can be parsed very quickly and easily by the existing C++ protobuf libraries.
+	\item Lots of existing cache simulation tools are written in C++, and I will likely be integrating one of these into my tag controller simulator.
+\end{itemize}
+
+I will begin by programming a decoder that can parse the traces correctly and provide the simulator with the data it needs. Next, I will integrate in the cache simulator logic; such programs do exist, and I will likely employ an existing one that has been verified to save unnecessary work, such as DnyamoRIO's drcachesim \cite{drcachesim}, allowing me to move forward to the interesting analysis stage which is the heart of the project. Once this is done and tested, I will begin working on analysis tools, which may include visualisations of the tag cache and/or tag table, or statistical properties of the memory accesses. After this, I will implement two baseline tag algorithms. I intend to implement the hierarchical scheme detailed in \textit{Efficient Tagged Memory}, and also Arm's Morello tag cache implementation. Evaluating these two is sensible due to my familiarity with both and the proven utility of both. These baselines may serve as a comparison point for a novel algorithm I develop later in the project.
+
+\subsection*{Novel Tag Controller Algorithm (Extension 1)}
+As an \textbf{extension} objective, I aim to develop a novel algorithm for tag table storage. Hopefully the analysis tools will provide useful insight for me to use when developing the algorithm; I intend to use the findings from the tools to inform the design, and also to investigate other possible techniques, such as the use of a prefetcher.
+
+I will first need to devise a scheme for dynamically requesting and freeing tag shadowspace DRAM. Once this is done, I will explore how much memory can be saved by a basic algorithm that makes use of the dynamic allocation scheme. After this, I will develop a more advanced algorithm that uses the insights from the analysis tools and my investigation, and I will evaluate the performance of it against those of the two baseline algorithms. I will look at using existing prefetchers if I see them as useful rather than developing my own, as the aim of this extension is to devise a highly performant tag controller algorithm, and not to spend time developing my own prefetcher that likely would not compare against those that have already been optimised and verified.
+
+\subsection*{Hardware Description Language Implementation (Extension 2)}
+As an \textbf{extension} objective, I aim to implement my algorithm in hardware, using a hardware description language, test its correctness either by designing a suite of test cases or by formal verification, and evaluate its performance on different workloads.
+
+I would use Bluespec for this due to it being designed for hardware implementations just like this and having a suite of tools, including simulators and FPGA synthesis tools, that I can leverage.
+
+\subsection*{FPGA Synthesis (Extension 3)}
+As an \textbf{extension} objective, I aim to synthesise my implementation on an FPGA, verify its correctness, and evaluate its performance on different workloads.
+
+
+\section*{Success Criteria}
+The core objective is to develop and verify the tag controller simulator, and to implement and evaluate the two aforementioned existing tag controller algorithms. The project will be successful if this objective is completed. To be specific, I will develop a program that, when given the parameters of the tag table and tag cache and a workload, meets the following criteria:
+\begin{itemize}
+	\item it can simulate how the states of the tag table and tag cache change with each memory access of the workload, when employing two different existing algorithms for tag table storage
+	\item for a simulation, it can determine the tag cache's hit ratio
+	\item for a simulation, it can determine the DRAM tag table access frequency
+	\item for a simulation, it can provide at least one other detail of the tag memory accesses that would be useful information to a professional analyst
+\end{itemize}
+
+\section*{Plan of Work}
+\subsection*{1) \nth{16} Oct -- \nth{29} Oct}
+\textbf{Work Tasks}
+\begin{itemize}
+	\item Obtain the traces and understand their format and how to parse them.
+	\item Complete development of the trace decoder for the tag controller simulator.
+\end{itemize}
+
+\textbf{Milestones}
+\begin{itemize}
+	\item Demonstrate a solid understanding of the format of the trace files by having a working trace decoder that is able to extract all relevant data from a given trace file.
+\end{itemize}
+
+\subsection*{2) \nth{30} Oct -- \nth{12} Nov}
+\textbf{Work Tasks}
+\begin{itemize}
+	\item Complete implementation of cache simulator logic.
+\end{itemize}
+
+\textbf{Milestones}
+\begin{itemize}
+	\item Demonstrate familiarity with the chosen cache simulator by having it integrated into my tag controller simulator, and verified to be working correctly.
+\end{itemize}
+
+\subsection*{3) \nth{13} Nov -- \nth{26} Nov}
+I am leaving this period of time as a planned slack period in which I may catch up with any project work that is behind schedule, and to ensure I am maintaining a good balance with the rest of my work for Part II.
+
+\subsection*{4) \nth{27} Nov -- \nth{10} Dec}
+\textbf{Work Tasks}
+\begin{itemize}
+	\item Complete the analysis/visualisation tools for the tag controller simulator.
+\end{itemize}
+
+\textbf{Milestones}
+\begin{itemize}
+	\item Have checked with my supervisor that the tools would be of use to a professional by having received feedback on a formal document describing what the tools do. Have a finished suite of analysis/visualisation tools that provide useful information to the user.
+\end{itemize}
+
+\subsection*{5) \nth{11} Dec -- \nth{24} Dec}
+\textbf{Work Tasks}
+\begin{itemize}
+	\item Implement and evaluate the two existing algorithms using the simulator, and report all findings into a formal document.
+\end{itemize}
+
+\textbf{Milestones}
+\begin{itemize}
+	\item Have emailed the document of my findings to my supervisor for review and iterated on any feedback received.
+\end{itemize}
+
+\subsection*{6) \nth{25} Dec -- \nth{07} Jan}
+I am leaving this period of time as a planned slack period in which I may catch up with any project work that is behind schedule, and to ensure I am maintaining a good balance with the rest of my work for Part II. I will also enjoy the Christmas holidays.
+
+\subsection*{7) \nth{08} Jan -- \nth{21} Jan}
+\textbf{Work Tasks}
+\begin{itemize}
+	\item List all opportunities for improvement found, noting which ones I plan to implement in my algorithm and why. Also research techniques that might lead to an improved tag controller algorithm. Detail all my findings in a formal document.
+	\item Make a final list of optimisations I aim to employ in my algorithm and develop a formal specification of my novel algorithm and get feedback from my supervisor.
+	\item Implement the dynamic DRAM allocator into the tag controller simulator.
+\end{itemize}
+
+\textbf{Milestones}
+\begin{itemize}
+	\item Have emailed my findings and the final list of optimisations to my supervisor for review, and have iterated on any feedback received.
+	\item Have emailed the formal specification of the algorithm to my supervisor for review.
+	\item Have confirmed with my supervisor that my implementation of the dynamic DRAM allocator does not make any false assumptions about real systems and is an accurate and useful model for the context in which my algorithm may run.
+\end{itemize}
+
+\subsection*{8) \nth{22} Jan -- \nth{4} Feb}
+\textbf{Work Tasks}
+\begin{itemize}
+	\item Implement the algorithm in the tag controller simulator and evaluate its performance, recording all findings in a formal document.
+	\item Write up my progress report, ask for a check from my supervisor if necessary, iterate on any feedback, and submit the final version.
+	\item Prepare my progress report presentation.
+\end{itemize}
+
+\textbf{Milestones}
+\begin{itemize}
+	\item Have implemented the algorithm, verified its correctness, evaluated its performance, and written up the formal document of my findings.
+	\item Have completed and submitted my progress report.
+	\item Have completed and rehearsed my progress report presentation to the point of being able to confidently deliver it in 5 minutes.
+\end{itemize}
+
+\subsection*{9) \nth{5} Feb -- \nth{18} Feb}
+I am leaving this period of time as a planned slack period in which I may catch up with any project work that is behind schedule, and to ensure I am maintaining a good balance with the rest of my work for Part II. I will also deliver my progress report presentation.
+
+\subsection*{10) \nth{19} Oct -- \nth{3} Mar}
+\textbf{Work Tasks}
+\begin{itemize}
+	\item Begin planning the HDL implementation of my algorithm.
+	\item Pick a processor to adjoin the tag controller to, detailing the justification for my choice in a formal document.
+	\item Begin programming the algorithm in my chosen HDL.
+\end{itemize}
+
+\textbf{Milestones}
+\begin{itemize}
+	\item Have sent my plan to my supervisor for review and iterated on any feedback.
+\end{itemize}
+
+\subsection*{11) \nth{4} Mar -- \nth{17} Mar}
+\textbf{Work Tasks}
+\begin{itemize}
+	\item Finish the HDL implementation and verify that it correctly implements my tag controller algorithm, detailing the verification process in a formal document.
+	\item Begin learning how to go about FPGA synthesis of the HDL implementation.
+	\item Write the introduction and preparation sections of the write-up.
+\end{itemize}
+
+\textbf{Milestones}
+\begin{itemize}
+	\item Have sent the formal document of verification details to my supervisor for review and confirmation, and iterated on any feedback.
+	\item Have emailed the introduction and preparation sections to my supervisor and iterated on any feedback.
+\end{itemize}
+
+\subsection*{12) \nth{18} Mar -- \nth{31} Mar}
+I am leaving this period of time as a planned slack period in which I may catch up with any project work that is behind schedule, and to ensure I am maintaining a good balance with the rest of my work for Part II.
+
+\subsection*{13) \nth{1} Apr -- \nth{14} Apr}
+\textbf{Work Tasks}
+\begin{itemize}
+	\item Learn all of the necessary tools/languages/frameworks required to synthesise the HDL implementation onto an FPGA.
+	\item Begin attempting to synthesise the HDL implementation onto the FPGA and working through issues, contacting my supervisor if needed.
+	\item Write the implementation section of the write-up.
+\end{itemize}
+
+\textbf{Milestones}
+\begin{itemize}
+	\item Have had a discussion with my supervisor about how exactly to go about the FPGA synthesis.
+	\item Have demonstrated my understanding and ability by synthesising an example netlist onto the FPGA I will use.
+	\item Have emailed the implementation section to my supervisor and iterated on any feedback.
+\end{itemize}
+
+\subsection*{14) \nth{15} Apr -- \nth{28} Apr}
+\textbf{Work Tasks}
+\begin{itemize}
+	\item Successfully synthesise the HDL implementation onto an FPGA. Test the FPGA implementation and verify its correctness.
+	\item Evaluate its performance and record all findings into a formal document. Compile this and all previous evaluation and conclusion documents and compose the evaluation and conclusion sections of the write-up.
+	\item Compose the sections into one document that will be the final dissertation. Sent this to my director of studies for feedback, and also to my supervisor if significant changes to previously checked parts have been made.
+\end{itemize}
+
+\textbf{Milestones}
+\begin{itemize}
+	\item Have a finalised report of the FPGA's performance when implementing my tag controller algorithm.
+	\item Have emailed the evaluation and conclusion sections to my supervisor and iterated on any feedback.
+	\item Have received feedback on my entire dissertation from my DoS and supervisor, and have iterated on that feedback. Have submitted the final version of my dissertation.
+\end{itemize}
+
+\subsection*{15) \nth{29} Apr -- \nth{10} May}
+I am leaving this period of time as a planned slack period in which I may catch up with any project work that is behind schedule, and to ensure I am maintaining a good balance with the rest of my work for Part II.
+
+\section*{Resource Declaration}
+
+Extension 3 will require permission to use a suitable lab-owned FPGA.
+
+Several memory access traces which I intend to use exist on the Computer Lab's internal Taramax network. To use them I will need access to the parent directory in which they reside.
+
+My supervisor, Dr Jonathan Woodruff (jdw57), will be responsible for providing both of these resources.
+
+For this project I will be using my laptop which has the following specifications:
+\begin{itemize}
+	\item Intel i7 10th Generation Core
+	\item 16 GB RAM
+	\item Dual-boots Windows 10 and Ubuntu 22.04 LTS
+	\item 1.5TB SSD storage
+\end{itemize}
+Should this device fail, I will be in need of a new laptop, so I will purchase en at-least equivalently capable machine. I will be using a private GitHub remote repository to provide version control and backups of all my programs, files and documents.\\
+I accept full responsibility for this machine and I have made contingency plans to protect myself against hardware and/or software failure.
+
+\printbibliography[category=mandatory]
+
+
+\end{document}
