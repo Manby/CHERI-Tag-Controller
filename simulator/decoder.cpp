@@ -1,4 +1,5 @@
 #include "decoder.h"
+#include "controller.h"
 
 size_t read_init_accesses(FILE *file, initial_access *buffer, size_t n) {
     uint8_t intermediate[n];
@@ -32,4 +33,19 @@ size_t read_llc_misses(FILE *file, llc_miss *buffer, size_t n) {
     }
 
     return numRead;
+}
+
+access convert(llc_miss miss) {
+    return access{};
+}
+
+size_t Simulator::processTrace(Controller &controller, llc_miss *buffer, size_t n) {
+    size_t i = 0;
+    while (i < n) {
+        access ax = convert(buffer[i]);
+        controller.handleMemoryAccess(ax);  // calls are automatically inlined
+        ++i;
+    }
+
+    return i;
 }
