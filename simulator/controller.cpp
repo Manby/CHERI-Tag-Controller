@@ -4,5 +4,5 @@
 
 #include "controller.h"
 
-Controller::Controller() : cache() {
+Controller::Controller(ofstream &output_trace) : cache(output_trace) {
 }

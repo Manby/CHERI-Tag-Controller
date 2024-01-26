@@ -19,14 +19,14 @@ int main(int argc, char* argv[]) {
         return 3;
     }
 
-    int n = 5000;
-    initial_access buf[n];
+    size_t n = 5000;
+    initialAccess buf[n];
     read_init_accesses(initial_accesses, buf, n);
 
-    printf("Entries have size %lu\n", sizeof(initial_access));
+    printf("Entries have size %lu\n", sizeof(initialAccess));
     printf("Initial accesses are as follows\n");
     for (int i = 0; i < n; i++) {
-        initial_access r = buf[i];
+        initialAccess r = buf[i];
         if (1) {
             printf("%d: %d, %d, \n",
                    i,
@@ -39,13 +39,13 @@ int main(int argc, char* argv[]) {
     printf("SWITCH\n");
 
     n = 5000;
-    llc_miss buf3[n];
+    llcMiss buf3[n];
     read_llc_misses(trace, buf3, n);
 
-    printf("Entries have size %lu\n", sizeof(llc_miss));
+    printf("Entries have size %lu\n", sizeof(llcMiss));
     printf("LLC misses are as follows\n");
     for (int i = 0; i < n; i++) {
-        llc_miss r = buf3[i];
+        llcMiss r = buf3[i];
         if (1) {
             printf("%d: %s, %d, %d, %d, %lu\n",
                    i,

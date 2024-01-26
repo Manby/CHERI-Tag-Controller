@@ -31,7 +31,7 @@ class Controller {
 protected:
     Cache cache;
 public:
-    Controller();
+    Controller(ofstream &output_trace);
     virtual void handleMemoryAccess(access ax) = 0;
 };
 
