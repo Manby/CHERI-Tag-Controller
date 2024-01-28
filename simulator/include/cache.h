@@ -1,13 +1,9 @@
-//
-// Created by kofi on 28/12/23.
-//
-
-#ifndef SIMULATOR_CACHE_H
-#define SIMULATOR_CACHE_H
+#pragma once
 
 #include <cstdint>
+#include <cassert>
 #include <fstream>
-#include "unordered_map"
+#include <unordered_map>
 using namespace std;
 
 // TODO: cite?
@@ -45,10 +41,29 @@ private:
     ofstream trace;
 
 public:
-    Cache(ofstream &output_trace);
-    void logRead(uint64_t addr, uint16_t tags);
-    void logWrite(uint64_t addr, uint16_t tags);
-    uint16_t doRead(uint64_t addr);
-};
+    explicit Cache(ofstream &output_trace) : data(), trace(std::move(output_trace)) {}
 
-#endif //SIMULATOR_CACHE_H
+    void logRead(uint64_t addr, uint16_t tags) {
+        cout << "CACHE READ  @ " << addr << " READ  " << tags << endl;
+        champsim_instr trace_entry(addr);
+        trace.write((char *) &trace_entry, sizeof(trace_entry));
+    }
+
+    void logWrite(uint64_t addr, uint16_t tags) {
+        cout << "CACHE WRITE @ " << addr << " WROTE " << tags << endl;
+        // TODO: store data in dict when appropriate
+        champsim_instr trace_entry(addr);
+        trace.write((char *) &trace_entry, sizeof(trace_entry));
+    }
+
+    uint16_t doRead(uint64_t addr) {
+        auto it = data.find(addr);
+        assert(it != data.end());
+        uint16_t tags = it->second;
+
+        cout << "CACHE DID DICTIONARY READ:" << endl;
+        logRead(addr, tags);
+
+        return tags;
+    }
+};

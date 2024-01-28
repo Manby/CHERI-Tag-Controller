@@ -1,9 +1,4 @@
-//
-// Created by kofi on 28/12/23.
-//
-
-#ifndef SIMULATOR_CONTROLLER_H
-#define SIMULATOR_CONTROLLER_H
+#pragma once
 
 #include "cache.h"
 #include "trace.h"
@@ -31,9 +26,7 @@ class Controller {
 protected:
     Cache cache;
 public:
-    Controller(ofstream &output_trace);
+    explicit Controller(ofstream &output_trace) : cache(output_trace) {}
+
     virtual void handleMemoryAccess(access ax) = 0;
 };
-
-
-#endif //SIMULATOR_CONTROLLER_H
