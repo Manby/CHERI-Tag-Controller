@@ -1,11 +1,11 @@
 #include "../include/decoder.h"
-#include "../include/DemoController.h"
+#include "../include/BaselineController.h"
 #include <fstream>
 #include <array>
 
 int main(int argc, char *argv[]) {
     if (argc < 4) {
-        printf("Not enough filenames given\n");
+        cout << "Not enough filenames given" << endl;
         return 1;
     }
 
@@ -13,38 +13,38 @@ int main(int argc, char *argv[]) {
     ifstream trace {argv[2]};
 
     if (!initial_accesses) {
-        printf("No file found by the name %s\n", argv[1]);
+        cout << "No file found by the name " << argv[1] << endl;
         return 2;
     }
 
     if (!trace) {
-        printf("No file found by the name %s\n", argv[2]);
+        cout << "No file found by the name " << argv[2] << endl;
         return 3;
     }
 
+    cout << "Decoding trace file" << endl;
     Decoder decoder = Decoder(initial_accesses, trace);
 
-    constexpr size_t n = 50000;
-    array<access, n> accesses_buffer{};
-    cout << "let's try read" << endl;
-    decoder.read_llc_misses<n>(accesses_buffer, n);
-    cout << "decoder read" << endl;
+    constexpr size_t n = 5000000;
+    auto accesses_buffer = new array<access, n>{};
+    decoder.read_llc_misses(*accesses_buffer, n);
     // TODO: below line should fail...? needs revision
     trace.close();
 
     ofstream output_trace {argv[3]};
     if (!output_trace) {
-        printf("Could not open %s for writing\n", argv[3]);
+        cout << "Could not open " << argv[3] << " for writing" << endl;
         return 4;
     }
 
-    DemoController controller(output_trace);
+    BaselineController controller(output_trace);
     Simulator simulator{};
 
-    printf("Beginning simulation\n");
-    size_t count = simulator.processTrace(decoder, controller, accesses_buffer, n);
-
+    cout << "Beginning simulation" << endl;
+    size_t count = simulator.processTrace(decoder, controller, *accesses_buffer, n);
     cout << "Processed " << count << " entries" << endl;
+
+    delete accesses_buffer;
 
     return 0;
 }

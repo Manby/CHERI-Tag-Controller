@@ -19,7 +19,7 @@ private:
         initial_accesses.seekg(index);  // TODO: explicit conversion (excon)
 
         uint8_t intermediate;
-        cout << "reading out initial access data at index " << index << endl;
+        //cout << "reading out initial access data at index " << index << endl;
         initial_accesses.read((char *) &intermediate, 1);
 
         size_t numRead = initial_accesses.gcount();
@@ -37,7 +37,7 @@ private:
             case INITIAL_ACCESS_TYPE_CSTORE:
                 return tag;
             default:
-                cout << "type was " << (int) type << endl;
+                //cout << "type was " << (int) type << endl;
                 return false; // initial access file claims this address was never accessed (type is -1), so we can return any value
         }
     }
@@ -49,10 +49,10 @@ private:
 
         if (miss.tags_known != 15) {
             int i = 0;
-            cout << "this miss has unknown tags: " << miss.tags_known << endl;
+            //cout << "this miss has unknown tags: " << miss.tags_known << endl;
             for (uint16_t base = 16; base >= 1; base >>= 1) {   // left-to-right; MSB-to-LSB
                 if (!(miss.tags_known & base)) {
-                    cout << "need to look up tag " << i << " for cacheline base address " << miss.addr << endl;
+                    //cout << "need to look up tag " << i << " for cacheline base address " << miss.addr << endl;
                     uint64_t index = (miss.addr / 16) + i;
                     if (getInitialTag(index)) {
                         miss.tags |= base;      // set the tag
@@ -92,21 +92,19 @@ public:
     */
 
     template<size_t l> size_t read_llc_misses(array<access, l> &buffer, size_t n) {
-        cout << "in func" << endl;
-        array<uint8_t, 16*l> intermediate{};  // llcMiss is 16 bytes
+        auto intermediate = new array<uint8_t, 16*l>;  // llcMiss is 16 bytes
         // TODO: could the reading from the file and the struct conversion happen in parallel? i.e. multithreading
-        cout << "attempting the trace read" << endl;
-        trace.read((char *) intermediate.data(), n*16); // TODO: explicit conversion
+        trace.read((char *) intermediate->data(), n*16); // TODO: explicit conversion
 
         size_t bytesRead = trace.gcount();
         for (int i = 0; i < bytesRead; i += 16) {
-            auto type = (llcMissType) intermediate[i];
-            uint16_t size = intermediate[i+2] + ((uint16_t) intermediate[i+3] << 8);
-            uint16_t tags = intermediate[i+4] + ((uint16_t) intermediate[i+5] << 8);
-            uint16_t tags_known = intermediate[i+6] + ((uint16_t) intermediate[i+7] << 8);
+            auto type = (llcMissType) intermediate->at(i);
+            uint16_t size = intermediate->at(i+2) + ((uint16_t) intermediate->at(i+3) << 8);
+            uint16_t tags = intermediate->at(i+4) + ((uint16_t) intermediate->at(i+5) << 8);
+            uint16_t tags_known = intermediate->at(i+6) + ((uint16_t) intermediate->at(i+7) << 8);
             uint64_t addr = 0;
             for (int j = 0; j < 8; ++j) {
-                addr += ((uint64_t) intermediate[i+8+j]) << (8*j);
+                addr += ((uint64_t) intermediate->at(i+8+j)) << (8*j);
             }
             addr -= QEMU_BASE_ADDRESS;
 
