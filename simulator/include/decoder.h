@@ -46,6 +46,7 @@ private:
         // TODO: refactor assert (?; and change == 15 check if necessary)
         assert(miss.size == 64);
         assert(miss.addr % 64 == 0);    // should be a 64-byte aligned address, as each cacheline is 64 bytes long
+        //if (miss.type == LLC_MISS_TYPE_WRITE && miss.tags != 0 && miss.tags_known != 15) cout << "WRITE TAGS " << miss.tags << "; KNOWN " << miss.tags_known << (miss.tags_known == 15 ? "" : "!!!") << endl;
 
         if (miss.tags_known != 15) {
             int i = 0;
