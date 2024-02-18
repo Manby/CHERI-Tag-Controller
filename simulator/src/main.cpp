@@ -1,6 +1,7 @@
 #include "../include/decoder.h"
-//#include "../include/BaselineController.h"
-#include "../include/ETMController.h"
+#include "../include/simulator.h"
+#include "../include/BaselineController.h"
+//#include "../include/ETMController.h"
 #include <fstream>
 #include <array>
 
@@ -26,7 +27,7 @@ int main(int argc, char *argv[]) {
     cout << "Decoding trace file" << endl;
     Decoder decoder = Decoder(initial_accesses, trace);
 
-    constexpr size_t n = 500000;
+    constexpr size_t n = 5000000;
     auto accesses_buffer = new array<access, n>{};
     decoder.read_llc_misses(*accesses_buffer, n);
     // TODO: below line should fail...? needs revision (this comment might be stale)
@@ -38,7 +39,8 @@ int main(int argc, char *argv[]) {
         return 4;
     }
 
-    ETMController controller(output_trace);
+    //ETMController controller(decoder, output_trace);
+    BaselineController controller(output_trace);
     Simulator simulator{};
 
     cout << "Beginning simulation" << endl;

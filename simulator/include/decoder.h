@@ -2,14 +2,20 @@
 
 #include <cstdint>
 #include <iostream>
+#include <fstream>
+#include <array>
 #include "trace.h"
-#include "controller.h"
+#include "schema.h"
+#include <cassert>
+
+using namespace std;
 
 #define QEMU_BASE_ADDRESS 0x80000000 // 2^31
 
 class Decoder {
-private:
+public:
     ifstream initial_accesses;
+private:
     ifstream trace;
 
     bool getInitialTag(uint64_t index) {
@@ -28,18 +34,7 @@ private:
         bool tag = intermediate >> 7;
         int8_t type = intermediate & 0x7f;  // TODO: excon
 
-        switch (type) {
-            case INITIAL_ACCESS_TYPE_INSTR:
-            case INITIAL_ACCESS_TYPE_LOAD:
-            case INITIAL_ACCESS_TYPE_STORE:
-                return false;
-            case INITIAL_ACCESS_TYPE_CLOAD:
-            case INITIAL_ACCESS_TYPE_CSTORE:
-                return tag;
-            default:
-                //cout << "type was " << (int) type << endl;
-                return false; // initial access file claims this address was never accessed (type is -1), so we can return any value
-        }
+        return assumeTag(tag, type);
     }
 
     access furnish(llcMiss miss) {
@@ -116,17 +111,25 @@ public:
 
         return bytesRead/16;    // return number of llcMiss structs read
     }
-};
 
-class Simulator {
-public:
-    template <size_t l> size_t processTrace(Decoder &decoder, Controller &controller, array<access, l> &buffer, size_t n) {
-        size_t i = 0;
-        while (i < n) {
-            controller.handleMemoryAccess(buffer[i]);  // calls are automatically inlined
-            ++i;
+
+    template<size_t n> void getTags(uint64_t base_index, int num_tags, array<uint8_t, n> &buffer) {
+        assert(num_tags % 8 == 0);      // should be a multiple of 8
+        uint8_t intermediate[num_tags];
+        initial_accesses.seekg(base_index);
+        initial_accesses.read((char *) &intermediate,num_tags);   // read out a cacheline's worth of initial_access structs
+        size_t numRead = initial_accesses.gcount();
+        assert(numRead == num_tags);
+
+        for (int i = 0; i < num_tags/8; ++i) {
+            uint8_t byte = 0;
+            for (int t = 0; t < 8; ++t) {
+                byte <<= 1;
+                bool tag = intermediate[8*i + t] >> 7;
+                int8_t type = intermediate[8*i + t] & 0x7f;  // TODO: excon
+                byte |= assumeTag(tag, type) ? 1 : 0;
+            }
+            buffer[i] = byte;
         }
-
-        return i;
     }
 };

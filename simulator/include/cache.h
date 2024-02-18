@@ -5,6 +5,8 @@
 #include <fstream>
 #include <unordered_map>
 #include <iostream>
+#include "schema.h"
+
 using namespace std;
 
 // TODO: cite?
@@ -32,8 +34,6 @@ struct champsim_instr {
         source_memory[0] = addr;
     }
 };
-
-#define TAG_CACHE_LINE_SIZE 64      //size of the tag cache's cachelines in bytes (this should probably be in controller.h)
 
 class Cache {
 
@@ -77,9 +77,10 @@ public:
     array<uint8_t, TAG_CACHE_LINE_SIZE> doRead(uint64_t addr) {
         auto it = data.find(addr);
         assert(it != data.end());
+        //if (it == data.end()) return {};
         array<uint8_t, TAG_CACHE_LINE_SIZE> line = it->second;
 
-        cout << "CACHE DID DICTIONARY READ:" << endl;
+        cout << "CACHE DID DICTIONARY READ" << endl;
         logRead(addr);
 
         return line;
@@ -89,7 +90,12 @@ public:
         assert(addr % TAG_CACHE_LINE_SIZE == 0); // address should be a cacheline base address
         data[addr] = line;
 
-        cout << "CACHE DID DICTIONARY WRITE:" << endl;
+        cout << "CACHE DID DICTIONARY WRITE" << endl;
         logWrite(addr);
+    }
+
+    void set(uint64_t addr, array<uint8_t, TAG_CACHE_LINE_SIZE> line) {
+        assert(addr % TAG_CACHE_LINE_SIZE == 0); // address should be a cacheline base address
+        data[addr] = line;
     }
 };

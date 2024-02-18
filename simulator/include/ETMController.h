@@ -8,16 +8,48 @@
 #include <bitset>
 #include <iostream>
 #include "controller.h"
-
-#define MEMORY_SIZE (1<<31)
-#define LEAF_TABLE_BASE (MEMORY_SIZE >> 16)
-
-#define TAG_CACHE_LINE_SIZE 64      //size of the tag cache's cachelines in bytes (this should probably be in controller.h)
-
+#include "decoder.h"
+#include "schema.h"
 
 class ETMController : public Controller {
 public:
-    ETMController(ofstream &output_trace) : Controller(output_trace) {}; // TODO: can I avoid this line?
+    ETMController(Decoder &decoder, ofstream &output_trace) : Controller(output_trace) {
+        array<uint8_t, TAG_CACHE_LINE_SIZE> root_line, leaf_line;
+        uint8_t root_byte;
+        bool no_leaves_set;
+
+        for (uint64_t rl = 0; rl < LEAF_TABLE_BASE; rl += TAG_CACHE_LINE_SIZE) {        // do one root cacheline line at a time
+            for (int rb = 0; rb < TAG_CACHE_LINE_SIZE; ++rb) {                          // each root cacheline contains TAG_CACHE_LINE_SIZE bytes
+                root_byte = 0;
+                for (int rt = 0; rt < 8; ++rt) {                                        // each byte contains 8 tags
+                    root_byte <<= 1;
+
+                    // focus on this single root tag
+                    decoder.getTags((8*rl+8*rb+rt)*TAG_CACHE_LINE_SIZE*8, TAG_CACHE_LINE_SIZE*8, leaf_line);
+
+                    // process the cacheline of leaf tags
+                    no_leaves_set = true;
+                    for (int lb = 0; lb < TAG_CACHE_LINE_SIZE; ++lb) {
+                        if (leaf_line[lb] != 0) {
+                            no_leaves_set = false;
+                            break;
+                        }
+                    }
+
+                    //cout << "SETTING LEAF @ " << TAG_CACHE_LINE_SIZE*(8*rl+8*rb+rt) << " + LEAF_TABLE_BASE" << endl;
+                    cache.set(TAG_CACHE_LINE_SIZE*(8*rl+8*rb+rt) + LEAF_TABLE_BASE, leaf_line);     // insert the leaf line into the cache
+
+                    root_byte |= no_leaves_set ? 0 : 1;
+                    //cout << no_leaves_set;
+                }
+
+                root_line[rb] = root_byte;      // push the root byte into the line
+            }
+
+            //cout << "SETTING ROOT @ " << rl << " (of " << (uint64_t) LEAF_TABLE_BASE << ", not inclusive)" << endl;
+            cache.set(rl, root_line);     // insert the root line into the cache
+        }
+    };
 
     void handleMemoryAccess(access ax) override {
         uint64_t root_index, root_base_addr, root_cacheline_index, leaf_index, leaf_base_addr, leaf_cacheline_index;
