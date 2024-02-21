@@ -1,7 +1,8 @@
 #include "../include/decoder.h"
 #include "../include/simulator.h"
 #include "../include/BaselineController.h"
-//#include "../include/ETMController.h"
+#include "../include/ETMController.h"
+#include "../include/MorelloController.h"
 #include <fstream>
 #include <array>
 
@@ -39,8 +40,9 @@ int main(int argc, char *argv[]) {
         return 4;
     }
 
+    MorelloController controller(decoder, output_trace, false);
     //ETMController controller(decoder, output_trace);
-    BaselineController controller(output_trace);
+    //BaselineController controller(output_trace);
     Simulator simulator{};
 
     cout << "Beginning simulation" << endl;

@@ -2,6 +2,9 @@
 
 #include "trace.h"
 
+#define DBG if (debug)
+constexpr bool debug = false;
+
 constexpr int TAG_CACHE_LINE_SIZE = 64;      //size of the tag cache's cachelines in bytes (this should probably be in controller.h)
 
 constexpr uint64_t MEMORY_SIZE = ((uint64_t) 1) << 31;

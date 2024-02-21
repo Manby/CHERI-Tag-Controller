@@ -58,7 +58,7 @@ public:
     }
 
     void logRead(uint64_t addr) {
-        cout << "CACHE READ  @ " << addr << endl;
+        DBG cout << "CACHE READ  @ " << addr << endl;
         champsim_instr trace_entry(i++, addressToBaseOffsetPair(addr).first);
         trace.write((char *) &trace_entry, sizeof(trace_entry));
         //cout << i++ << " LOGGED: " << (int) trace_entry.ip << "#" << (int) trace_entry.is_branch << "#" << (int) trace_entry.branch_taken << "#" << (int) trace_entry.destination_registers[0] << ":" << (int) trace_entry.destination_registers[1] << "#" << (int) trace_entry.source_registers[0] << ":" << (int) trace_entry.source_registers[1] << ":" << (int) trace_entry.source_registers[2] << ":" << (int) trace_entry.source_registers[3] << "#" << (int) trace_entry.destination_memory[0] << ":" << (int) trace_entry.destination_memory[1] << "#" << (int) trace_entry.source_memory[0] << ":" << (int) trace_entry.source_memory[1] << ":" << (int) trace_entry.source_memory[2] << ":" << (int) trace_entry.source_memory[3] << endl;
@@ -66,7 +66,7 @@ public:
     }
 
     void logWrite(uint64_t addr) {
-        cout << "CACHE WRITE @ " << addr << endl;
+        DBG cout << "CACHE WRITE @ " << addr << endl;
         // TODO: store data in dict when appropriate
         champsim_instr trace_entry(i++, addressToBaseOffsetPair(addr).first);
         trace.write((char *) &trace_entry, sizeof(trace_entry));
@@ -80,7 +80,7 @@ public:
         //if (it == data.end()) return {};
         array<uint8_t, TAG_CACHE_LINE_SIZE> line = it->second;
 
-        cout << "CACHE DID DICTIONARY READ" << endl;
+        DBG cout << "CACHE DID DICTIONARY READ" << endl;
         logRead(addr);
 
         return line;
@@ -90,12 +90,23 @@ public:
         assert(addr % TAG_CACHE_LINE_SIZE == 0); // address should be a cacheline base address
         data[addr] = line;
 
-        cout << "CACHE DID DICTIONARY WRITE" << endl;
+        DBG cout << "CACHE DID DICTIONARY WRITE" << endl;
         logWrite(addr);
     }
 
     void set(uint64_t addr, array<uint8_t, TAG_CACHE_LINE_SIZE> line) {
         assert(addr % TAG_CACHE_LINE_SIZE == 0); // address should be a cacheline base address
         data[addr] = line;
+    }
+
+    array<uint8_t, TAG_CACHE_LINE_SIZE> peek(uint64_t addr) {
+        auto it = data.find(addr);
+        assert(it != data.end());
+        //if (it == data.end()) return {};
+        array<uint8_t, TAG_CACHE_LINE_SIZE> line = it->second;
+
+        DBG cout << "CACHE DID DICTIONARY PEEK" << endl;
+
+        return line;
     }
 };

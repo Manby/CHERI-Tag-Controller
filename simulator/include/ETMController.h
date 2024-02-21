@@ -56,9 +56,10 @@ public:
         array<uint8_t, TAG_CACHE_LINE_SIZE> root_line, leaf_line;
         bitset<8> root_byte, leaf_byte;
         bool root_tag, leaf_tag;
+        assert(ax.addr % 64 == 0);
         switch (ax.type) {
             case ACCESS_TYPE_READ:
-                cout << "\nREAD @ " << ax.addr << endl;
+                DBG cout << "\nREAD @ " << ax.addr << endl;
                 //cache.logRead(translateAddrDataToTag(ax.addr, 0).first, ax.tags);
                 root_index = (ax.addr >> 4) / (8*TAG_CACHE_LINE_SIZE); // index of the root tag we want;
                                                                        // 2^4 bytes per leaf tag * 8*TAG_CACHE_LINE_SIZE leaf tags per root tag
@@ -71,18 +72,22 @@ public:
                 // TODO: Check that the above line isn't doing it backwards!
 
                 if (!root_tag) {
-                    cout << "Root tag was zero; short circuit!" << endl;
+                    DBG cout << "Root tag was zero; short circuit!" << endl;
                     return;   // we would return a 0 to the client
                 }
 
-                leaf_index = (ax.addr >> 7) / (TAG_CACHE_LINE_SIZE);
+                leaf_index = ax.addr >> 4;        // just the index of the first tag of the 4 in the cacheline; an index into the entire leaf table
+                                                    // will be a multiple of 4
                 leaf_base_addr = ((leaf_index - (leaf_index % (8*TAG_CACHE_LINE_SIZE))) >> 3) + LEAF_TABLE_BASE;   // base address of the cacheline
                 leaf_line = cache.doRead(leaf_base_addr);
 
                 /*
                 Below is what we /would/ do, but we don't need to
 
-                leaf_cacheline_index = leaf_index % (8*TAG_CACHE_LINE_SIZE);
+                leaf_cacheline_index = leaf_index % (8*TAG_CACHE_LINE_SIZE);    // index of the first of the 4 tags /within the cacheline/
+                cout << "INDEX: " << leaf_cacheline_index << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+                assert(leaf_cacheline_index % 4 == 0);
+
                 leaf_byte = leaf_line[leaf_cacheline_index / 8];
                 leaf_tag = leaf_byte[leaf_cacheline_index % 8];
                 */
@@ -90,7 +95,7 @@ public:
                 return; // we would return whatever the leaf is
 
             case ACCESS_TYPE_WRITE:
-                cout << "\nWRITE @ " << ax.addr << endl;
+                DBG cout << "\nWRITE @ " << ax.addr << endl;
                 //cache.logWrite(translateAddrDataToTag(ax.addr, 0).first, ax.tags);
                 root_index = (ax.addr >> 4) / (8*TAG_CACHE_LINE_SIZE); // index of the root tag we want;
                 // 2^4 bytes per leaf tag * 8*TAG_CACHE_LINE_SIZE leaf tags per root tag
@@ -102,31 +107,35 @@ public:
                 root_tag = root_byte[root_cacheline_index % 8];
 
                 if (!root_tag && ax.tags == 0) {
-                    cout << "Root tag was zero, and we're writing zeroes; short circuit!" << endl;
+                    DBG cout << "Root tag was zero, and we're writing zeroes; short circuit!" << endl;
                     return;  // we don't need to touch anything
                 }
 
                 if (ax.tags == 0) {
-                    cout << "We're writing zeroes, but root tag is 1; shall we clear the root?" << endl;
-                    leaf_index = (ax.addr >> 7) / (TAG_CACHE_LINE_SIZE);
+                    DBG cout << "We're writing zeroes, but root tag is 1; shall we clear the root?" << endl;
+                    leaf_index = ax.addr >> 4;
                     leaf_base_addr = ((leaf_index - (leaf_index % (8*TAG_CACHE_LINE_SIZE))) >> 3) + LEAF_TABLE_BASE;   // base address of the cacheline
                     leaf_line = cache.doRead(leaf_base_addr);
 
                     leaf_cacheline_index = leaf_index % (8*TAG_CACHE_LINE_SIZE);
                     leaf_byte = leaf_line[leaf_cacheline_index / 8];
-                    leaf_byte[leaf_cacheline_index % 8] = 0;    // write a 0 in
+
+                    leaf_byte[leaf_cacheline_index % 8] = 0;
+                    leaf_byte[(leaf_cacheline_index + 1) % 8] = 0;
+                    leaf_byte[(leaf_cacheline_index + 2) % 8] = 0;
+                    leaf_byte[(leaf_cacheline_index + 3) % 8] = 0;
                     // TODO: check above not backwards
                     leaf_line[leaf_cacheline_index / 8] = (uint8_t) leaf_byte.to_ulong();
                     cache.doWrite(leaf_base_addr, leaf_line);
 
                     for (int i = 0; i < TAG_CACHE_LINE_SIZE; ++i) {
                         if (leaf_line[i] != 0) {
-                            cout << "Nope -- found a 1" << endl;
+                            DBG cout << "Nope -- found a 1" << endl;
                             return;  // cannot clear the root as there is a tag still set
                         }
                     }
 
-                    cout << "Found no 1s, so yes!" << endl;
+                    DBG cout << "Found no 1s, so yes!" << endl;
                     // no leaf tags are set -- clear the root
                     root_byte[root_cacheline_index % 8] = 0;    // write a 0 in
                     root_line[root_cacheline_index / 8] = (uint8_t) root_byte.to_ulong();
@@ -136,7 +145,7 @@ public:
                 }
 
                 if (!root_tag) {
-                    cout << "Setting the root (it was cleared)" << endl;
+                    DBG cout << "Setting the root (it was cleared)" << endl;
                     root_byte[root_cacheline_index % 8] = 1;    // write a 1 in
                     root_line[root_cacheline_index / 8] = (uint8_t) root_byte.to_ulong();
                     // TODO: check above not backwards
@@ -151,8 +160,11 @@ public:
                 leaf_byte = leaf_line[leaf_cacheline_index / 8];
                 leaf_tag = leaf_byte[leaf_cacheline_index % 8];
                 if (!leaf_tag) {
-                    cout << "Setting the leaf (it was cleared)" << endl;
-                    leaf_byte[leaf_cacheline_index % 8] = 1;    // write a 1 in
+                    DBG cout << "Setting the leaf (it was cleared)" << endl;
+                    leaf_byte[leaf_cacheline_index % 8] = (ax.tags & 8) ? 1 : 0;
+                    leaf_byte[(leaf_cacheline_index + 1) % 8] = (ax.tags & 4) ? 1 : 0;
+                    leaf_byte[(leaf_cacheline_index + 2) % 8] = (ax.tags & 2) ? 1 : 0;
+                    leaf_byte[(leaf_cacheline_index + 3) % 8] = (ax.tags & 1) ? 1 : 0;
                     // TODO: check above not backwards
                     leaf_line[leaf_cacheline_index / 8] = (uint8_t) leaf_byte.to_ulong();
                     cache.doWrite(leaf_base_addr, leaf_line);
