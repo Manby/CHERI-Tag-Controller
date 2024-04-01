@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include <array>
 #include "trace.h"
 #include "schema.h"
@@ -87,8 +88,8 @@ public:
     }
     */
 
-    template<size_t l> size_t read_llc_misses(array<access, l> &buffer, size_t n) {
-        auto intermediate = new array<uint8_t, 16*l>;  // llcMiss is 16 bytes
+    size_t read_llc_misses(vector<access> &buffer, size_t n) {
+        auto intermediate = new vector<uint8_t>(16*buffer.size());  // llcMiss is 16 bytes
         // TODO: could the reading from the file and the struct conversion happen in parallel? i.e. multithreading
         trace.read((char *) intermediate->data(), n*16); // TODO: explicit conversion
 

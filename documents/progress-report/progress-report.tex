@@ -1,0 +1,94 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[left=2cm, right=2cm]{geometry}
+\setlength{\parindent}{0pt}
+\usepackage{parskip}
+\usepackage[super]{nth}
+
+\begin{document}
+
+
+{\centering \Large Computer Science Tripos -- Part II -- Progress Report\par}
+\vspace{1cm}
+{\centering \Huge Next Generation CHERI Tag Controller\par}
+\vspace{1.5cm}
+{\centering \large Kofi Wilkinson, Homerton College\par}
+{\centering \large ksw40@cam.ac.uk\par}
+{\centering \large Project Originator: Dr Jonathan Woodruff\par}
+{\centering \large \nth{2} February 2024\par}
+\vspace{1.5cm}
+
+%\begin{tabular}{ll}
+%\textbf{Project Supervisor:} & Dr Jonathan Woodruff\\
+%\textbf{Director of Studies:} & Dr John Fawcett\\
+%\textbf{Project Checkers:} & Prof. Alan Blackwell \& Prof. Srinivasan Keshav
+%\end{tabular}
+
+\textbf{Project Supervisor:} Dr Jonathan Woodruff\par
+\textbf{Director of Studies:} Dr John Fawcett\par
+\textbf{Project Checkers:} Prof. Alan Blackwell \& Prof. Srinivasan Keshav
+\vspace{2cm}
+
+
+\section*{Description of Progress}
+So far, I have obtained a trace file and successfully written a decoder in C++. I have also written C++ that parses the contents of the
+file (which contains the DRAM access trace of a particular workload), and simulates
+the execution of a given tag controller algorithm running on said workload. This
+produces an output that can be consumed by ChampSim, an existing C++ cache
+simulator, which currently provides me with some basic metrics, such as tag cache hit and miss frequencies.
+I have implemented the hierarchical tag controller algorithm detailed in the
+paper \textit{Efficient Tagged Memory}, and have run successful simulations with
+it. This code however is currently untested, and there are many opportunities for errors
+to have slipped in.
+
+\section*{Revisiting the Schedule}
+\subsection*{Status}
+I am more than halfway through the core of my project -- these tasks remain:
+\begin{itemize}
+	\item Gain access to the traces on the CL network
+	\item Select a useful set of analysis/visualisation tools
+	for the simulator, and verify with my supervisor
+	\item Implement these tools
+	\item Implement Arm's Morello controller algorithm
+	\item Test both algorithms and evaluate them using the tools, recording
+		my findings in a formal document.
+\end{itemize}
+
+I have not yet begun work on any of the exetnsions of my project.
+
+\subsection*{Difficulties}
+One great unforseen difficulty was how long decoding successfully would take.
+A lack of
+documentation required me to
+look through some code of an alumnus who once worked with
+these files, to engage in a long email exchange with said alumnus, and demanded
+much trial and error.
+
+Another difficulty was finding the correct output trace format
+my program should use so that ChampSim can parse them.
+ChampSim has no documentation
+regarding its trace formats. Again, this had me looking through
+(ChampSim's) code.
+
+A further difficulty was that my Michaelmas was relatively heavy
+with lecture courses. I initially took 5 and dropped one
+after spending some time on it. I did not originally plan this, and my
+intention only changed after learning more about this year's courses. Thus,
+my original workplan did not factor this in, leading to me being further
+behind than expected.
+
+\subsection*{Adapted Workplan}
+I am taking 2 courses in Lent and 1 in Easter. This leaves me with more time to catch up.
+
+Gaining access to the traces should be straightforward via communications with
+CL staff.
+I will implement the Morello algorithm next. After, I will brainstorm some
+ideas for metrics that the analysis/visualisation tools could provide, and will
+implement them. This should be done by 07/02.\\
+I will then test the algorithms, evaluate them with the tools, and record my
+findings. This should be done by 12/02.\\
+This leaves me 4 weeks behind my original schedule. With a total of 3 weeks
+of slack period remaining in the original schedule (not counting my 2 week
+safety-net slack period at the end), and this term's lighter lecture load, I should
+be able to make up for the remaining 1 week task debt.
+
+\end{document}

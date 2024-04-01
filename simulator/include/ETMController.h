@@ -13,7 +13,7 @@
 
 class ETMController : public Controller {
 public:
-    ETMController(Decoder &decoder, ofstream &output_trace) : Controller(output_trace) {
+    ETMController(Decoder &decoder, ofstream &output_trace, ofstream &output_log) : Controller(output_trace, output_log) {
         array<uint8_t, TAG_CACHE_LINE_SIZE> root_line, leaf_line;
         uint8_t root_byte;
         bool no_leaves_set;

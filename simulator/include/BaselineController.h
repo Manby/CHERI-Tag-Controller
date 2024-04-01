@@ -27,7 +27,7 @@ private:
     }
 
 public:
-    BaselineController(ofstream &output_trace) : Controller(output_trace) {}; // TODO: can I avoid this line?
+    BaselineController(ofstream &output_trace, ofstream &output_log) : Controller(output_trace, output_log) {}; // TODO: can I avoid this line?
 
     void handleMemoryAccess(access ax) override {
         switch (ax.type) {

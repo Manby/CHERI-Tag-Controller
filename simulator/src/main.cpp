@@ -4,7 +4,8 @@
 #include "../include/ETMController.h"
 #include "../include/MorelloController.h"
 #include <fstream>
-#include <array>
+#include <vector>
+#include <unordered_set>
 
 int main(int argc, char *argv[]) {
     if (argc < 4) {
@@ -28,8 +29,27 @@ int main(int argc, char *argv[]) {
     cout << "Decoding trace file" << endl;
     Decoder decoder = Decoder(initial_accesses, trace);
 
-    constexpr size_t n = 5000000;
-    auto accesses_buffer = new array<access, n>{};
+    size_t n;
+    if (argc >= 5) {
+        stringstream str(argv[4]);
+        str >> n;
+    } else {
+        n = 5000000;
+    }
+
+    unordered_set<size_t> log_points{};
+    ofstream output_log{};
+    if (argc >= 6) {
+        output_log.open(argv[5]);
+
+        int i = 6;
+        while (i < argc) {
+            log_points.insert(stoi(argv[i]));
+            i++;
+        }
+    }
+
+    auto accesses_buffer = new vector<access>(n);
     decoder.read_llc_misses(*accesses_buffer, n);
     // TODO: below line should fail...? needs revision (this comment might be stale)
     trace.close();
@@ -40,13 +60,13 @@ int main(int argc, char *argv[]) {
         return 4;
     }
 
-    MorelloController controller(decoder, output_trace, false);
+    MorelloController controller(decoder, output_trace, output_log, false);
     //ETMController controller(decoder, output_trace);
     //BaselineController controller(output_trace);
     Simulator simulator{};
 
     cout << "Beginning simulation" << endl;
-    size_t count = simulator.processTrace(decoder, controller, *accesses_buffer, n);
+    size_t count = simulator.processTrace(decoder, controller, *accesses_buffer, n, log_points);
     cout << "Processed " << count << " entries" << endl;
 
     delete accesses_buffer;

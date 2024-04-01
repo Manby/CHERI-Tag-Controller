@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <cassert>
 #include <fstream>
-#include <unordered_map>
+#include <map>
 #include <iostream>
 #include "schema.h"
 
@@ -41,8 +41,9 @@ class Cache {
  * This way, I think we can have it so only the Controller class can access Cache's methods, which is nice hiding.
  */
 private:
-    unordered_map<uint64_t, array<uint8_t, TAG_CACHE_LINE_SIZE>> data;
+    map<uint64_t, array<uint8_t, TAG_CACHE_LINE_SIZE>> data;
     ofstream trace;
+    ofstream log;
     int i;
 
     static std::pair<uint64_t, uint16_t> addressToBaseOffsetPair(uint64_t addr) {  // converts an address into the base address of its cacheline and the offset into the cacheline
@@ -53,7 +54,7 @@ private:
     }
 
 public:
-    explicit Cache(ofstream &output_trace) : data(), trace(std::move(output_trace)), i(0x10000) {
+    explicit Cache(ofstream &output_trace, ofstream &output_log) : data(), trace(std::move(output_trace)), log(std::move(output_log)), i(0x10000) {
         //cout << sizeof(champsim_instr) << endl;
     }
 
@@ -108,5 +109,13 @@ public:
         DBG cout << "CACHE DID DICTIONARY PEEK" << endl;
 
         return line;
+    }
+
+    void dump() {
+        array<uint8_t, TAG_CACHE_LINE_SIZE> line;
+        for (auto it = data.begin(); it != data.end(); it++) {        // do one cacheline line at a time
+            line = it->second;
+            log.write((char *) line.data(), TAG_CACHE_LINE_SIZE);
+        }
     }
 };

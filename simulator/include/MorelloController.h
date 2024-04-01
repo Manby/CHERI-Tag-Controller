@@ -15,7 +15,7 @@ class MorelloController : public Controller {
 private:
     bool cache_type;
 public:
-    MorelloController(Decoder &decoder, ofstream &output_trace, bool cache_type) : Controller(output_trace), cache_type(cache_type) {
+    MorelloController(Decoder &decoder, ofstream &output_trace, ofstream &output_log, bool cache_type) : Controller(output_trace, output_log), cache_type(cache_type) {
         array<uint8_t, TAG_CACHE_LINE_SIZE> root_line, leaf_line;
 
         for (uint64_t rl = 0; rl < LEAF_TABLE_BASE; rl += TAG_CACHE_LINE_SIZE) {        // do one root cacheline line at a time
