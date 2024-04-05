@@ -9,6 +9,8 @@
 
 using namespace std;
 
+constexpr int BASE = 0x100000;
+
 // TODO: cite?
 // https://github.com/ChampSim/ChampSim/blob/b44625f3a2d4517b0bf80297f8819c797a966fe7/inc/trace_instruction.h#L35
 constexpr size_t NUM_INSTR_DESTINATIONS = 2;
@@ -54,7 +56,7 @@ private:
     }
 
 public:
-    explicit Cache(ofstream &output_trace, ofstream &output_log) : data(), trace(std::move(output_trace)), log(std::move(output_log)), i(0x10000) {
+    explicit Cache(ofstream &output_trace, ofstream &output_log) : data(), trace(std::move(output_trace)), log(std::move(output_log)), i(BASE) {
         //cout << sizeof(champsim_instr) << endl;
     }
 
@@ -112,10 +114,15 @@ public:
     }
 
     void dump() {
+        cout << "DUMP: " << i-BASE << endl;
         array<uint8_t, TAG_CACHE_LINE_SIZE> line;
         for (auto it = data.begin(); it != data.end(); it++) {        // do one cacheline line at a time
             line = it->second;
             log.write((char *) line.data(), TAG_CACHE_LINE_SIZE);
         }
+    }
+
+    int get_num_accesses() {
+        return i-BASE;
     }
 };

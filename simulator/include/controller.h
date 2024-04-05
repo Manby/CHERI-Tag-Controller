@@ -17,4 +17,8 @@ public:
     void dump_cache() {
         cache.dump();
     }
+
+    int get_num_accesses() {
+        return cache.get_num_accesses();
+    }
 };
