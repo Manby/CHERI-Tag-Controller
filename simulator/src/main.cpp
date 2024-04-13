@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    auto accesses_buffer = new vector<access>(n);
+    auto accesses_buffer = new vector<memAccess>(n);
     decoder.read_llc_misses(*accesses_buffer, n);
     // TODO: below line should fail...? needs revision (this comment might be stale)
     trace.close();

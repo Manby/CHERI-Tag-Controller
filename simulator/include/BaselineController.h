@@ -29,7 +29,7 @@ private:
 public:
     BaselineController(ofstream &output_trace, ofstream &output_log) : Controller(output_trace, output_log) {}; // TODO: can I avoid this line?
 
-    void handleMemoryAccess(access ax) override {
+    void handleMemoryAccess(memAccess ax) override {
         switch (ax.type) {
             case ACCESS_TYPE_READ:
                 cache.logRead(translateAddrDataToTag(ax.addr, 0).first);

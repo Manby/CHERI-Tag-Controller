@@ -51,7 +51,7 @@ public:
         }
     };
 
-    void handleMemoryAccess(access ax) override {
+    void handleMemoryAccess(memAccess ax) override {
         uint64_t root_index, root_base_addr, root_cacheline_index, leaf_index, leaf_base_addr, leaf_cacheline_index;
         array<uint8_t, TAG_CACHE_LINE_SIZE> root_line, leaf_line;
         bitset<8> root_byte, leaf_byte;
@@ -75,6 +75,7 @@ public:
                     DBG cout << "Root tag was zero; short circuit!" << endl;
                     return;   // we would return a 0 to the client
                 }
+                TST cout << "READING A NON-ZERO LINE at " << ax.addr << endl;
 
                 leaf_index = ax.addr >> 4;        // just the index of the first tag of the 4 in the cacheline; an index into the entire leaf table
                                                     // will be a multiple of 4

@@ -38,7 +38,7 @@ private:
         return assumeTag(tag, type);
     }
 
-    access furnish(llcMiss miss) {
+    memAccess furnish(llcMiss miss) {
         // TODO: refactor assert (?; and change == 15 check if necessary)
         assert(miss.size == 64);
         assert(miss.addr % 64 == 0);    // should be a 64-byte aligned address, as each cacheline is 64 bytes long
@@ -61,7 +61,7 @@ private:
             }
         }
 
-        return access(
+        return memAccess(
                 miss.type == LLC_MISS_TYPE_READ ? ACCESS_TYPE_READ : ACCESS_TYPE_WRITE,
                 miss.size,
                 miss.tags,
@@ -88,7 +88,7 @@ public:
     }
     */
 
-    size_t read_llc_misses(vector<access> &buffer, size_t n) {
+    size_t read_llc_misses(vector<memAccess> &buffer, size_t n) {
         auto intermediate = new vector<uint8_t>(16*buffer.size());  // llcMiss is 16 bytes
         // TODO: could the reading from the file and the struct conversion happen in parallel? i.e. multithreading
         trace.read((char *) intermediate->data(), n*16); // TODO: explicit conversion

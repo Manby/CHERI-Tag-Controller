@@ -2,8 +2,10 @@
 
 #include "trace.h"
 
-#define DBG if (debug)
-constexpr bool debug = false;
+constexpr bool ksw_debug = false;
+constexpr bool ksw_testing = true;
+#define DBG if (ksw_debug)
+#define TST if (ksw_testing)
 
 constexpr int TAG_CACHE_LINE_SIZE = 64;      //size of the tag cache's cachelines in bytes (this should probably be in controller.h)
 

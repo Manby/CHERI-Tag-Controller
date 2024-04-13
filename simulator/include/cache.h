@@ -5,6 +5,7 @@
 #include <fstream>
 #include <map>
 #include <iostream>
+#include <vector>
 #include "schema.h"
 
 using namespace std;
@@ -46,6 +47,7 @@ private:
     map<uint64_t, array<uint8_t, TAG_CACHE_LINE_SIZE>> data;
     ofstream trace;
     ofstream log;
+    vector<champsim_instr> prevLogged;
     int i;
 
     static std::pair<uint64_t, uint16_t> addressToBaseOffsetPair(uint64_t addr) {  // converts an address into the base address of its cacheline and the offset into the cacheline
@@ -56,7 +58,7 @@ private:
     }
 
 public:
-    explicit Cache(ofstream &output_trace, ofstream &output_log) : data(), trace(std::move(output_trace)), log(std::move(output_log)), i(BASE) {
+    explicit Cache(ofstream &output_trace, ofstream &output_log) : data(), trace(std::move(output_trace)), log(std::move(output_log)), i(BASE), prevLogged() {
         //cout << sizeof(champsim_instr) << endl;
     }
 
@@ -64,6 +66,7 @@ public:
         DBG cout << "CACHE READ  @ " << addr << endl;
         champsim_instr trace_entry(i++, addressToBaseOffsetPair(addr).first);
         trace.write((char *) &trace_entry, sizeof(trace_entry));
+        TST prevLogged.push_back(trace_entry);
         //cout << i++ << " LOGGED: " << (int) trace_entry.ip << "#" << (int) trace_entry.is_branch << "#" << (int) trace_entry.branch_taken << "#" << (int) trace_entry.destination_registers[0] << ":" << (int) trace_entry.destination_registers[1] << "#" << (int) trace_entry.source_registers[0] << ":" << (int) trace_entry.source_registers[1] << ":" << (int) trace_entry.source_registers[2] << ":" << (int) trace_entry.source_registers[3] << "#" << (int) trace_entry.destination_memory[0] << ":" << (int) trace_entry.destination_memory[1] << "#" << (int) trace_entry.source_memory[0] << ":" << (int) trace_entry.source_memory[1] << ":" << (int) trace_entry.source_memory[2] << ":" << (int) trace_entry.source_memory[3] << endl;
         //if (i == 6180) assert(false);
     }
@@ -73,6 +76,7 @@ public:
         // TODO: store data in dict when appropriate
         champsim_instr trace_entry(i++, addressToBaseOffsetPair(addr).first);
         trace.write((char *) &trace_entry, sizeof(trace_entry));
+        TST prevLogged.push_back(trace_entry);
         //cout << i++ << " LOGGED: " << (int) trace_entry.ip << "#" << (int) trace_entry.is_branch << "#" << (int) trace_entry.branch_taken << "#" << (int) trace_entry.destination_registers[0] << ":" << (int) trace_entry.destination_registers[1] << "#" << (int) trace_entry.source_registers[0] << ":" << (int) trace_entry.source_registers[1] << ":" << (int) trace_entry.source_registers[2] << ":" << (int) trace_entry.source_registers[3] << "#" << (int) trace_entry.destination_memory[0] << ":" << (int) trace_entry.destination_memory[1] << "#" << (int) trace_entry.source_memory[0] << ":" << (int) trace_entry.source_memory[1] << ":" << (int) trace_entry.source_memory[2] << ":" << (int) trace_entry.source_memory[3] << endl;
         //if (i == 6180) assert(false);
     }
@@ -124,5 +128,9 @@ public:
 
     int get_num_accesses() {
         return i-BASE;
+    }
+
+    vector<champsim_instr> getPrevLogged() {
+        return prevLogged;
     }
 };
