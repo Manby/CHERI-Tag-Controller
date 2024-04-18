@@ -6,6 +6,15 @@
 \usepackage[natbib=true,sorting=none,style=numeric,backend=biber,useprefix=true]{biblatex}
 \usepackage{amsmath}
 \usepackage{hyperref}
+\usepackage{import}
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+\usepackage{caption}
+\usepackage{color}
+\definecolor{gray}{gray}{0.4}
+\captionsetup{labelfont={color=gray,it},textfont={color=gray,it}}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
 
 \addbibresource{cites.bib}
 \AtBeginBibliography{}
@@ -20,6 +29,7 @@
 \DeclareBibliographyCategory{preparation}
 \addtocategory{preparation}{clcheri}
 \addtocategory{preparation}{morello}
+\addtocategory{preparation}{champsim}
 
 
 \begin{document}
@@ -40,6 +50,10 @@ Proforma
 
 
 \tableofcontents
+
+\newpage
+
+\listoffigures
 
 
 \include{introduction}

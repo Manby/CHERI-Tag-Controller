@@ -1,1 +1,75 @@
 \section{Implementation}
+
+This chapter !!!.
+
+\subsection{Implementation Overview}
+The simulator consists of 3 main parts: the trace decoder, the tag controller algorithm, and the logical tag cache. Figure \ref{fig:wbx} shows how these parts fit into the information flow of the whole project.
+
+% what about the visualisation tool??? similar sentence for this?
+
+[FIGURE WBX!!!]
+
+\subsection{Simulator Framework}
+- collect command line args
+- opens trace files
+- has decoder decode trace files
+- opens output file and log file
+- initialises controller (and thus tag cache state)
+- begin simulation: iterate through llc accesses and have the tag controller handle them
+- report number of resulting accesses and number of llc miss entries processed
+
+\subsection{Trace Decoder}
+- mention assumption scheme due to incomplete info
+- lets main read in llc misses (uses both files, uses furnish->getInitial...)
+- lets controller initialise its cache's state
+
+\subsection{Tag Controller}
+- has a logical cache
+- abstract class's constructor initialises cache
+- implementations must set the state of the cache (different schemes have different tables)
+- handleMemoryAccess must is abstract
+- some cache proxy methods
+
+\subsubsection{Basic Scheme}
+- simple cache setup
+- simple translation
+
+\subsubsection{\textit{Efficient Tagged Memory}'s Hierarchical Scheme}
+- implementation of the algorithm (give code snippet and refer back to figure)
+
+\subsubsection{The Morello Project Scheme}
+- same cache setup as basic
+- same translation as basic
+- emulate caches seperately!
+
+\subsection{Tag Cache}
+- log methods (which are now INTERNAL; not used by other classes) log to the trace
+- outward-facing do methods
+- outward-facing peek and set; peek used by morello to see state without logging; set used in cache initialisation and also in morello to set without logging
+
+\subsection{Logging}
+
+\subsubsection{Logging Tag Table State}
+- simulator is told the log points
+- tells controller to dump the cache, the cache dumps to an output file
+- format of the dump
+- also return the points where champsim needs to log (i.e. after how many accesses, as it's not 1:1 with llc misses)
+
+\subsubsection{Adding Logging to ChampSim for Tag Cache State}
+- cache.h: made BLOCK public
+- main.cc: new logpoints commandlinearg, open logfile in setup, pass it to champsim::main
+- champsim.cc: after each round of update, check if the next logpoint has been reached, if so log to outputfile
+
+\subsection{Visualisation Tool}
+- parse command line args
+- run controller sim, collecting log points for champsim
+- print out number of accesses and the logpoints
+- run champsim
+- open the output logs
+- draw things (in a senible order)
+- save image, which must be opened by a tool such as vipsdisp
+
+\subsection{Testing}
+
+\subsection{Repository Overview}
+- the dirtree thing

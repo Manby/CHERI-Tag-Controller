@@ -1,0 +1,133 @@
+\definecolor{c6c8ebf}{RGB}{108,142,191}
+\definecolor{cdae8fc}{RGB}{218,232,252}
+\definecolor{c82b366}{RGB}{130,179,102}
+\definecolor{cd5e8d4}{RGB}{213,232,212}
+\definecolor{c666666}{RGB}{102,102,102}
+\definecolor{whitesmoke}{RGB}{245,245,245}
+\definecolor{c333333}{RGB}{51,51,51}
+
+
+\def \globalscale {1.000000}
+\begin{tikzpicture}[y=1cm, x=1cm, yscale=\globalscale,xscale=\globalscale, every node/.append style={scale=\globalscale}, inner sep=0pt, outer sep=0pt]
+  \path[draw=black,miter limit=10.0] (1.5875, 7.4348) -- (1.5875, 6.545);
+
+
+
+  \path[draw=black,fill=black,miter limit=10.0] (1.5875, 6.4061) -- (1.4949, 6.5913) -- (1.5875, 6.545) -- (1.6801, 6.5913) -- cycle;
+
+
+
+  \path[draw=c6c8ebf,fill=cdae8fc] (0.0, 8.4931) rectangle (3.175, 7.4348);
+
+
+
+  \begin{scope}[shift={(-0.0132, 0.0132)}]
+    \node[text=black,anchor=south] (text7233) at (1.5875, 7.8581){Fetch root line};
+
+
+
+  \end{scope}
+  \path[draw=black,miter limit=10.0] (1.5875, 9.5515) -- (1.5875, 8.6617);
+
+
+
+  \path[draw=black,fill=black,miter limit=10.0] (1.5875, 8.5228) -- (1.4949, 8.708) -- (1.5875, 8.6617) -- (1.6801, 8.708) -- cycle;
+
+
+
+  \path[draw=c82b366,fill=cd5e8d4] (1.5875, 10.0806) ellipse (1.5875cm and 0.5292cm);
+
+
+
+  \begin{scope}[shift={(-0.0132, 0.0132)}]
+    \node[text=black,anchor=south] (text4266) at (1.5875, 9.9748){On Read};
+
+
+
+  \end{scope}
+  \path[draw=black,miter limit=10.0] (2.6458, 5.3181) -- (4.0648, 5.3181);
+
+
+
+  \path[draw=black,fill=black,miter limit=10.0] (4.2037, 5.3181) -- (4.0185, 5.2255) -- (4.0648, 5.3181) -- (4.0185, 5.4107) -- cycle;
+
+
+
+  \path[draw=black,miter limit=10.0] (1.5875, 4.2598) -- (1.5875, 3.37);
+
+
+
+  \path[draw=black,fill=black,miter limit=10.0] (1.5875, 3.2311) -- (1.4949, 3.4163) -- (1.5875, 3.37) -- (1.6801, 3.4163) -- cycle;
+
+
+
+  \path[draw=c666666,fill=whitesmoke,miter limit=10.0] (1.5875, 6.3765) -- (2.6458, 5.3181) -- (1.5875, 4.2598) -- (0.5292, 5.3181) -- cycle;
+
+
+
+  \begin{scope}[shift={(-0.0132, 0.0132)}]
+    \node[text=c333333,anchor=south] (text603) at (1.5875, 5.2123){Root bit 0?};
+
+
+
+  \end{scope}
+  \path[draw=c82b366,fill=cd5e8d4] (5.8208, 5.3181) ellipse (1.5875cm and 0.5292cm);
+
+
+
+  \begin{scope}[shift={(-0.0132, 0.0132)}]
+    \node[text=black,anchor=south] (text4085) at (5.8208, 5.2123){Return 0s};
+
+
+
+  \end{scope}
+  \path (2.6458, 5.8473) rectangle (4.2333, 5.0535);
+
+
+
+  \begin{scope}[shift={(-0.0132, 0.0132)}]
+    \node[text=black,anchor=south] (text9903) at (3.4396, 5.3446){Yes};
+
+
+
+  \end{scope}
+  \path[draw=black,miter limit=10.0] (1.5875, 2.1431) -- (1.5875, 1.2533);
+
+
+
+  \path[draw=black,fill=black,miter limit=10.0] (1.5875, 1.1144) -- (1.4949, 1.2996) -- (1.5875, 1.2533) -- (1.6801, 1.2996) -- cycle;
+
+
+
+  \path[draw=c6c8ebf,fill=cdae8fc] (0.0, 3.2015) rectangle (3.175, 2.1431);
+
+
+
+  \begin{scope}[shift={(-0.0132, 0.0132)}]
+    \node[text=black,anchor=south] (text5182) at (1.5875, 2.5665){Fetch leaf line};
+
+
+
+  \end{scope}
+  \path (1.3229, 4.2598) rectangle (2.9104, 3.466);
+
+
+
+  \begin{scope}[shift={(-0.0132, 0.0132)}]
+    \node[text=black,anchor=south] (text6349) at (2.1167, 3.7571){No};
+
+
+
+  \end{scope}
+  \path[draw=c82b366,fill=cd5e8d4] (1.5875, 0.5556) ellipse (1.5875cm and 0.5292cm);
+
+
+
+  \begin{scope}[shift={(-0.0132, 0.0132)}]
+    \node[text=black,anchor=south] (text3031) at (1.5875, 0.4498){Return leaf bits};
+
+
+
+  \end{scope}
+
+\end{tikzpicture}
