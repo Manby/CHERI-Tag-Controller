@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
         cout << "Performed [" << controller.get_num_accesses() << "] accesses" << endl;
     } else {
         cout << "Baseline tag controller implementation" << endl;
-        BaselineController controller(output_trace, output_log);
+        BaselineController controller(decoder, output_trace, output_log);
         count = simulator.processTrace(decoder, controller, *accesses_buffer, n, log_points);
         cout << "Performed [" << controller.get_num_accesses() << "] accesses" << endl;
     }

@@ -38,7 +38,7 @@ public:
                 }
             }
         }
-    };
+    }
 
     void handleMemoryAccess(memAccess ax) override {
         uint64_t leaf_index, leaf_base_addr, leaf_cacheline_index;
