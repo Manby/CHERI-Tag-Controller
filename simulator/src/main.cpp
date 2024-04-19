@@ -1,5 +1,5 @@
-#include "../include/decoder.h"
-#include "../include/simulator.h"
+#include "../include/Decoder.h"
+#include "../include/Simulator.h"
 #include "../include/BaselineController.h"
 #include "../include/ETMController.h"
 #include "../include/MorelloController.h"

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "trace.h"
-#include "decoder.h"
-#include "controller.h"
+#include "Decoder.h"
+#include "Controller.h"
 #include <unordered_set>
 
 class Simulator {

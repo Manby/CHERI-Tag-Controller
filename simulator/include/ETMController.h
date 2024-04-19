@@ -7,14 +7,14 @@
 
 #include <bitset>
 #include <iostream>
-#include "controller.h"
-#include "decoder.h"
+#include "Controller.h"
+#include "Decoder.h"
 #include "schema.h"
 
 class ETMController : public Controller {
 public:
     ETMController(Decoder &decoder, ofstream &output_trace, ofstream &output_log) : Controller(output_trace, output_log) {
-        array<uint8_t, TAG_CACHE_LINE_SIZE> root_line, leaf_line;
+        Cacheline root_line, leaf_line;
         uint8_t root_byte;
         bool no_leaves_set;
 
@@ -53,7 +53,7 @@ public:
 
     void handleMemoryAccess(memAccess ax) override {
         uint64_t root_index, root_base_addr, root_cacheline_index, leaf_index, leaf_base_addr, leaf_cacheline_index;
-        array<uint8_t, TAG_CACHE_LINE_SIZE> root_line, leaf_line;
+        Cacheline root_line, leaf_line;
         bitset<8> root_byte, leaf_byte;
         bool root_tag, leaf_tag;
         assert(ax.addr % 64 == 0);

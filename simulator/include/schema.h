@@ -1,6 +1,7 @@
 #pragma once
 
 #include "trace.h"
+#include <array>
 
 constexpr bool ksw_debug = false;
 constexpr bool ksw_testing = true;
@@ -8,9 +9,12 @@ constexpr bool ksw_testing = true;
 #define TST if (ksw_testing)
 
 constexpr int TAG_CACHE_LINE_SIZE = 64;      //size of the tag cache's cachelines in bytes (this should probably be in controller.h)
+typedef std::array<uint8_t, TAG_CACHE_LINE_SIZE> Cacheline;
 
 constexpr uint64_t MEMORY_SIZE = ((uint64_t) 1) << 31;
 constexpr uint64_t LEAF_TABLE_BASE = MEMORY_SIZE >> 16;
+
+#define QEMU_BASE_ADDRESS 0x80000000 // 2^31
 
 bool assumeTag(bool tag, int8_t type) {
     switch (type) {

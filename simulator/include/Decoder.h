@@ -11,8 +11,6 @@
 
 using namespace std;
 
-#define QEMU_BASE_ADDRESS 0x80000000 // 2^31
-
 class Decoder {
 public:
     ifstream initial_accesses;

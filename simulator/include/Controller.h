@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cache.h"
+#include "Cache.h"
 #include "trace.h"
 #include <cstdint>
 

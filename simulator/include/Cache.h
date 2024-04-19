@@ -44,7 +44,7 @@ class Cache {
  * This way, I think we can have it so only the Controller class can access Cache's methods, which is nice hiding.
  */
 private:
-    map<uint64_t, array<uint8_t, TAG_CACHE_LINE_SIZE>> data;
+    map<uint64_t, Cacheline> data;
     ofstream trace;
     ofstream log;
     vector<champsim_instr> prevLogged;
@@ -81,11 +81,11 @@ public:
         //if (i == 6180) assert(false);
     }
 
-    array<uint8_t, TAG_CACHE_LINE_SIZE> doRead(uint64_t addr) {
+    Cacheline doRead(uint64_t addr) {
         auto it = data.find(addr);
         assert(it != data.end());
         //if (it == data.end()) return {};
-        array<uint8_t, TAG_CACHE_LINE_SIZE> line = it->second;
+        Cacheline line = it->second;
 
         DBG cout << "CACHE DID DICTIONARY READ" << endl;
         logRead(addr);
@@ -93,7 +93,7 @@ public:
         return line;
     }
 
-    void doWrite(uint64_t addr, array<uint8_t, TAG_CACHE_LINE_SIZE> line) {
+    void doWrite(uint64_t addr, Cacheline line) {
         assert(addr % TAG_CACHE_LINE_SIZE == 0); // address should be a cacheline base address
         data[addr] = line;
 
@@ -101,16 +101,16 @@ public:
         logWrite(addr);
     }
 
-    void set(uint64_t addr, array<uint8_t, TAG_CACHE_LINE_SIZE> line) {
+    void set(uint64_t addr, Cacheline line) {
         assert(addr % TAG_CACHE_LINE_SIZE == 0); // address should be a cacheline base address
         data[addr] = line;
     }
 
-    array<uint8_t, TAG_CACHE_LINE_SIZE> peek(uint64_t addr) {
+    Cacheline peek(uint64_t addr) {
         auto it = data.find(addr);
         assert(it != data.end());
         //if (it == data.end()) return {};
-        array<uint8_t, TAG_CACHE_LINE_SIZE> line = it->second;
+        Cacheline line = it->second;
 
         DBG cout << "CACHE DID DICTIONARY PEEK" << endl;
 
@@ -119,7 +119,7 @@ public:
 
     void dump() {
         cout << "DUMP: " << i-BASE << endl;
-        array<uint8_t, TAG_CACHE_LINE_SIZE> line;
+        Cacheline line;
         for (auto it = data.begin(); it != data.end(); it++) {        // do one cacheline line at a time
             line = it->second;
             log.write((char *) line.data(), TAG_CACHE_LINE_SIZE);
