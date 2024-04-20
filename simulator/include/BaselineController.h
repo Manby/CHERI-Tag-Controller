@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include <bitset>
 #include <iostream>
 #include "FlatTableController.h"
 #include "schema.h"
+#include "utils.h"
 #include "Decoder.h"
 
 class BaselineController : public FlatTableController {
@@ -20,7 +20,6 @@ public:
         uint64_t leaf_base_addr;
         uint16_t leaf_cacheline_index;
         Cacheline leaf_line;
-        bitset<8> leaf_byte;
 
         switch (ax.type) {
             case ACCESS_TYPE_READ:
@@ -33,15 +32,7 @@ public:
                 leaf_cacheline_index = result.second;
 
                 leaf_line = cache.doRead(leaf_base_addr);
-                leaf_byte = leaf_line[leaf_cacheline_index / 8];
-
-                leaf_byte[leaf_cacheline_index % 8] = (ax.tags & 8) ? 1 : 0;
-                leaf_byte[(leaf_cacheline_index + 1) % 8] = (ax.tags & 4) ? 1 : 0;
-                leaf_byte[(leaf_cacheline_index + 2) % 8] = (ax.tags & 2) ? 1 : 0;
-                leaf_byte[(leaf_cacheline_index + 3) % 8] = (ax.tags & 1) ? 1 : 0;
-                // TODO: check above not backwards
-                leaf_line[leaf_cacheline_index / 8] = (uint8_t) leaf_byte.to_ulong();
-
+                modifyTags(leaf_line, leaf_cacheline_index, ax.tags);
                 cache.doWrite(leaf_base_addr, leaf_line);
         }
     }

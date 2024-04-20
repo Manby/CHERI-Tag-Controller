@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include <bitset>
 #include <iostream>
 #include <iomanip>
 #include "FlatTableController.h"
 #include "Decoder.h"
 #include "schema.h"
+#include "utils.h"
 
 class MorelloController : public FlatTableController {
 private:
@@ -24,8 +24,7 @@ public:
         uint64_t leaf_base_addr;
         uint16_t leaf_cacheline_index;
         Cacheline leaf_line;
-        bitset<8> leaf_byte;
-        uint8_t leaf_tags;
+        bool no_leaf_tags;
 
         switch (ax.type) {
             case ACCESS_TYPE_READ:
@@ -34,16 +33,10 @@ public:
                 leaf_base_addr = translateToTagAddr(ax.addr).first;   // base address of the cacheline
                 leaf_line = cache.peek(leaf_base_addr);
 
-                leaf_tags = false;
-                for (uint8_t byte : leaf_line) {
-                    if (byte != 0) {
-                        leaf_tags = true;
-                        break;
-                    }
-                }
+                // find out which cache should log the READ
+                no_leaf_tags = isClear(leaf_line);
 
-                if (((leaf_tags == 0) && !cache_type) ||
-                        ((leaf_tags != 0) && cache_type)) {// if we are responsible for handling this one, then log it
+                if ((no_leaf_tags && !cache_type) || (!no_leaf_tags && cache_type)) {// if we are responsible for handling this one, then log it
                     cache.doRead(leaf_base_addr);
                 }
 
@@ -59,39 +52,18 @@ public:
                 leaf_line = cache.peek(leaf_base_addr);
 
                 // find out which cache should log the READ
-                leaf_tags = false;
-                for (uint8_t byte : leaf_line) {
-                    if (byte != 0) {
-                        leaf_tags = true;
-                        break;
-                    }
-                }
+                no_leaf_tags = isClear(leaf_line);
 
-                if (((leaf_tags == 0) && !cache_type) ||
-                    ((leaf_tags != 0) && cache_type)) {// if we are responsible for handling the READ, then log it
+                if ((no_leaf_tags && !cache_type) || (!no_leaf_tags && cache_type)) {// if we are responsible for handling this one, then log it
                     cache.doRead(leaf_base_addr);
                 }
 
-                leaf_byte = leaf_line[leaf_cacheline_index / 8];
-
-                leaf_byte[leaf_cacheline_index % 8] = (ax.tags & 8) ? 1 : 0;
-                leaf_byte[(leaf_cacheline_index + 1) % 8] = (ax.tags & 4) ? 1 : 0;
-                leaf_byte[(leaf_cacheline_index + 2) % 8] = (ax.tags & 2) ? 1 : 0;
-                leaf_byte[(leaf_cacheline_index + 3) % 8] = (ax.tags & 1) ? 1 : 0;
-                // TODO: check above not backwards
-                leaf_line[leaf_cacheline_index / 8] = (uint8_t) leaf_byte.to_ulong();
+                modifyTags(leaf_line, leaf_cacheline_index, ax.tags);
 
                 // find out which cache should log the WRITE
-                leaf_tags = false;
-                for (uint8_t byte : leaf_line) {
-                    if (byte != 0) {
-                        leaf_tags = true;
-                        break;
-                    }
-                }
+                no_leaf_tags = isClear(leaf_line);
 
-                if (((leaf_tags == 0) && !cache_type) ||
-                    ((leaf_tags != 0) && cache_type)) {// if we are responsible for handling the WRITE, then log it
+                if ((no_leaf_tags && !cache_type) || (!no_leaf_tags && cache_type)) {// if we are responsible for handling this one, then log it
                     cache.doWrite(leaf_base_addr, leaf_line);
                 } else {
                     // otherwise, still update the state so the simulation remains accurate
