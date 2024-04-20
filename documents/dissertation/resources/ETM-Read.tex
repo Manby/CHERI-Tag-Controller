@@ -7,7 +7,7 @@
 \definecolor{c333333}{RGB}{51,51,51}
 
 
-\def \globalscale {1.000000}
+\def \globalscale {0.900000}
 \begin{tikzpicture}[y=1cm, x=1cm, yscale=\globalscale,xscale=\globalscale, every node/.append style={scale=\globalscale}, inner sep=0pt, outer sep=0pt]
   \path[draw=black,miter limit=10.0] (1.5875, 7.4348) -- (1.5875, 6.545);
 
@@ -21,8 +21,8 @@
 
 
 
-  \begin{scope}[shift={(-0.0132, 0.0132)}]
-    \node[text=black,anchor=south] (text7233) at (1.5875, 7.8581){Fetch root line};
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text2751) at (1.5743, 7.8449){Fetch root line};
 
 
 
@@ -39,8 +39,8 @@
 
 
 
-  \begin{scope}[shift={(-0.0132, 0.0132)}]
-    \node[text=black,anchor=south] (text4266) at (1.5875, 9.9748){On Read};
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text9098) at (1.5743, 9.9616){On Read};
 
 
 
@@ -65,8 +65,8 @@
 
 
 
-  \begin{scope}[shift={(-0.0132, 0.0132)}]
-    \node[text=c333333,anchor=south] (text603) at (1.5875, 5.2123){Root bit 0?};
+  \begin{scope}[fill=c333333,anchor=south]
+    \node[text=c333333,anchor=south] (text9223) at (1.5743, 5.1991){Root bit 0?};
 
 
 
@@ -75,23 +75,23 @@
 
 
 
-  \begin{scope}[shift={(-0.0132, 0.0132)}]
-    \node[text=black,anchor=south] (text4085) at (5.8208, 5.2123){Return 0s};
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text4055) at (5.8076, 5.1991){Return 0s};
 
 
 
   \end{scope}
-  \path (2.6458, 5.8473) rectangle (4.2333, 5.0535);
+  \path (2.6458, 5.9796) rectangle (4.2333, 5.1858);
 
 
 
-  \begin{scope}[shift={(-0.0132, 0.0132)}]
-    \node[text=black,anchor=south] (text9903) at (3.4396, 5.3446){Yes};
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text9546) at (3.4264, 5.4636){Yes};
 
 
 
   \end{scope}
-  \path[draw=black,miter limit=10.0] (1.5875, 2.1431) -- (1.5875, 1.2533);
+  \path[draw=black,miter limit=10.0] (1.5875, 2.1431) -- (1.5875, 1.614) -- (1.5875, 1.2533);
 
 
 
@@ -103,8 +103,8 @@
 
 
 
-  \begin{scope}[shift={(-0.0132, 0.0132)}]
-    \node[text=black,anchor=south] (text5182) at (1.5875, 2.5665){Fetch leaf line};
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text3383) at (1.5743, 2.5532){Fetch leaf line};
 
 
 
@@ -113,8 +113,8 @@
 
 
 
-  \begin{scope}[shift={(-0.0132, 0.0132)}]
-    \node[text=black,anchor=south] (text6349) at (2.1167, 3.7571){No};
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text6126) at (2.1034, 3.7439){No};
 
 
 
@@ -123,8 +123,50 @@
 
 
 
-  \begin{scope}[shift={(-0.0132, 0.0132)}]
-    \node[text=black,anchor=south] (text3031) at (1.5875, 0.4498){Return leaf bits};
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text4320) at (1.5743, 0.4366){Return leaf bits};
+
+
+
+  \end{scope}
+  \path[draw=c82b366,fill=cd5e8d4] (4.4979, 10.2129) rectangle (5.0271, 9.6838);
+
+
+
+  \path (4.9213, 10.3452) rectangle (6.7733, 9.5515);
+
+
+
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text906) at (5.8341, 9.8293){Entry/Exit};
+
+
+
+  \end{scope}
+  \path[draw=c666666,fill=whitesmoke] (4.4979, 9.5515) rectangle (5.0271, 9.0223);
+
+
+
+  \path (4.8948, 9.6838) rectangle (8.0698, 8.89);
+
+
+
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text5276) at (6.4691, 9.1678){Internal operations};
+
+
+
+  \end{scope}
+  \path[draw=c6c8ebf,fill=cdae8fc] (4.4979, 8.89) rectangle (5.0271, 8.3608);
+
+
+
+  \path (4.7625, 9.0223) rectangle (8.2021, 8.2285);
+
+
+
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text6516) at (6.4691, 8.5064){Memory operations};
 
 
 

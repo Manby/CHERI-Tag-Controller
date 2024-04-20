@@ -7,7 +7,7 @@ This chapter explains the relevant background material required to undertake the
 In a tagged memory architecture $N$-bit values in memory are notionally `extended' with $M$-bit tags. Doing so can provide desirable security properties like those mentioned in the introduction. \textit{Efficient Tagged Memory} \cite{joannou2017efficient} describes how a one-bit tag is sufficient to implement all of the security properties that tagged memory architectures can afford. The extension of values with tags might be implemented in one of several ways, but section III of the paper details how storing all of the tag bits in a single table at the top of DRAM is the most practical for single-bit tag (SBT) architectures; this is also the most used technique in practice.\\
 These architectures mandate allocation of a static region of DRAM at boot-time to act as the tag table. This results in a constant physical memory consumption cost that is proportional to the size of the (taggable) address space.
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.5\textwidth]{tgm}
 	\caption{How the two parts of a tagged value are stored in physical memory.}
@@ -16,18 +16,18 @@ These architectures mandate allocation of a static region of DRAM at boot-time t
 
 To implement such a scheme in hardware, we use a tag controller. This unit is responsible for intercepting memory access requests and translating them into appropriate requests that will result in the retrieval of both the value and its tag.
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\includegraphics[width=0.5\textwidth]{tmc}
+	\includegraphics[width=0.7\textwidth]{tmc}
 	\caption{Step-by-step memory access translation.}
 	\label{fig:tmc}
 \end{figure}
 
 My project focuses on merged-cache hierarchy architectures. In these, values in the cache are stored unified with their tag -- that is, the data caches contain tags as well as values. Section IV of \textit{Efficient Tagged Memory} explains how the alternative, split-cache hierarchy architectures, are `unnecessary', and result in a less efficient and less practical implementation. Thus, only when handling last-level cache (LLC) misses do we need to perform such translations. The tag controller therefore interfaces with the LLC and DRAM.
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\includegraphics[width=0.5\textwidth]{itf}
+	\includegraphics[width=0.3\textwidth]{itf}
 	\caption{How the parts of the memory system interface.}
 	\label{fig:itf}
 \end{figure}
@@ -35,9 +35,9 @@ My project focuses on merged-cache hierarchy architectures. In these, values in 
 \subsubsection{CHERI}
 My project focuses on the CHERI architecture model. The model defines a single-bit tagged memory architecture, where 64-bit pointers can be replaced with 128-bit `capabilities' that are also are given a 1-bit tag, which allows hardware-enforced security invariants to be guaranteed about these special values, and thus also about executions of programs that use them. There is more information about the CHERI model on the website for the Departement of Computer Science and Technology at the University of Cambridge \cite{clcheri}.
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\includegraphics[width=0.5\textwidth]{cap}
+	\includegraphics[width=0.7\textwidth]{cap}
 	\caption{A CHERI capability.}
 	\label{fig:cap}
 \end{figure}
@@ -46,6 +46,22 @@ My project focuses particularly on the CHERI architecture as it is a speciality 
 
 \subsubsection{A Basic Scheme}
 The most basic scheme has a single flat table at the top of DRAM that contains all of the tags, and nothing more. This table contains one tag bit per 128 bits of regular memory (as a CHERI capability is 128-bits plus a 1-bit tag). The table therefore consumes the top \nth{129} of DRAM. The layout of DRAM is as depicted in figure \ref{fig:tgm}.
+
+When the tag controller must read from the table, it uses the following algorithm:
+\begin{figure}[H]
+	\centering
+	\subimport{resources}{Baseline-Read.tex}
+	\caption{The basic algorithm for reading tags. Memory access operations are blue.}
+	\label{fig:bar}
+\end{figure}
+
+The algorithm for writing to the table is as follows:
+\begin{figure}[H]
+	\centering
+	\subimport{resources}{Baseline-Write.tex}
+	\caption{The basic algorithm for writing tags. Operations internal to the tag controller are grey.}
+	\label{fig:baw}
+\end{figure}
 
 As far as the processor and the cache systems are concerned, regular memory still begins at physical address \texttt{0x0}. The fact that the controller is mandating that the base of the \textit{tag table} is at \texttt{0x0}, rather than the base of physical memory being here, is abstracted away by the controller's interface. For clarity, I will refer to the addresses that the processor and caches see as `logical physical addresses', and those that the tag controller emits and DRAM sees as `actual physical addresses'. These are both distinct from virtual addresses.\\
 Also, note that everything here is done in terms of cachelines, as the tag controller's client is a cache -- the tag controller receives logical base addresses of cachelines from the LLC, rather than those of individual values, and it must return entire cachelines to the LLC.
@@ -69,9 +85,9 @@ The tag controller then needs to access memory twice; once to retrieve the value
 
 Now, we first check to see of the tag cacheline we want is in the tag cache. This request can be performed in parallel to the DRAM lookup of the value cacheline. If the tag cache happens to hit, then we avoid the second DRAM access entirely, and eliminate the overhead. Naturally, this motivates efforts to maximise the hit rate of the tag cache.
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\includegraphics[width=0.5\textwidth]{tca}
+	\includegraphics[width=0.3\textwidth]{tca}
 	\caption{Where the tag cache sits in the memory system.}
 	\label{fig:tca}
 \end{figure}
@@ -84,29 +100,28 @@ One way to increase the hit rate of the tag cache is to store more information a
 This scheme uses a two-tiered hierarchical tag table. The `leaf' table is identical to the table described in the basic scheme, with one tag bit per 128-bit value. The `root' table contains bits that hold information about \textit{the state of the tags in the leaf table}.\\
 One bit in the root table corresponds to 512 bits in the leaf table -- an entire cacheline of tags. The root bit is a 0 if all 512 bits in the corresponding leaf cacheline are 0, otherwise it is a 1.
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\includegraphics[width=0.5\textwidth]{etm}
+	\includegraphics[width=0.7\textwidth]{etm}
 	\caption{\textit{Efficient Tagged Memory}'s two-level hierarchical lookup table.}
 	\label{fig:etm}
 \end{figure}
 
 The tag controller has a new algorithm for both reading and writing the state of tags in the table. The algorithm for reading is as follows:
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
 	\subimport{resources}{ETM-Read.tex}
-	\caption{The algorithm for reading tags. Memory access operations are highlighted blue. Operations internal to the tag controller are grey.}
+	\caption{The ETM algorithm for reading tags.}
 	\label{fig:etr}
 \end{figure}
 
 The algorithm for writing is as follows:
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
 	\subimport{resources}{ETM-Write.tex}
-	\caption{The algorithm for writing tags.}
+	\caption{The ETM algorithm for writing tags.}
 	\label{fig:etw}
 \end{figure}
-
 
 The tag cache may hold lines from either the root table or the leaf table. For each \textit{cleared bit from the root table} that resides in the tag cache, we are essentially containing information about the state of an entire leaf cacheline whilst only consuming one bit of cache space. When executing typical CHERI workloads, it is common to find cleared root bits. It is even common to find entire cachelines of cleared root bits. This is due to the nature of these workloads -- the capabilities tend to be focused into small regions of memory, rather than spread out across the entire address space.\\
 Thus, whilst in some cases we triple the number of DRAM accesses for a given LLC miss, the paper finds that there is only a very small overall increase in DRAM traffic overhead, due to the tag cache being able to hold plenty of information about the tags, and it therefore being scarcely necessary to perform additional DRAM accesses.\\
@@ -114,9 +129,9 @@ Part of my project is to reproduce these results(!!! check that i actually do do
 
 In DRAM, the root table lives above the leaf table. The leaf table lives above the value portion of DRAM (\ref{fig:ett}).
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\includegraphics[width=0.5\textwidth]{ett}
+	\includegraphics[width=0.7\textwidth]{ett}
 	\caption{The physical layout of the hierarchical table.}
 	\label{fig:ett}
 \end{figure}
@@ -144,14 +159,14 @@ This scheme uses a simple flat DRAM tag table, just like the one in the basic sc
 
 * The \textit{tag of a cacheline's base address} is the upper $K$ bits of the base address of the cacheline (for some $K$ defined by various system parameters). This is the academic-standard name for this value, but it unfortunately clashes with the tagged memory \textit{tags}. To disambiguate, I use the term \textit{address-tag} hereon to refer to the former, and simply \textit{tag} for the latter.
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\includegraphics[width=0.5\textwidth]{mor}
+	\includegraphics[width=0.3\textwidth]{mor}
 	\caption{The layout of the two tag caches in the Morello memory system.}
 	\label{fig:mor}
 \end{figure}
 
-As the tag table has not changed from the simple scheme, the formulae used by the controller for translating addresses are the same (equations \ref{eq:avcas} and \ref{eq:atcas}).
+As the tag table has not changed from the simple scheme, the formulae used by the controller for translating addresses are the same (equations \ref{eq:avcas} and \ref{eq:atcas}), and so are the two algorithms (figures \ref{fig:bar} and \ref{fig:baw}).
 
 \subsection{My Project -- A Tag Controller Simulator}
 
@@ -178,9 +193,9 @@ It would be useful for an architect to be able to somehow visualise how the stat
 As part of my project, I developed a tool that allows a user to essentially take `snapshots' of the tag cache at chosen points of workload execution, and view them afterward. The images depict the state of the tag table and the tag cache at that point of execution.
 
 \subsubsection{Requirements Analysis}
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
-	\includegraphics[width=0.5\textwidth]{bbx}
+	\includegraphics[width=0.65\textwidth]{bbx}
 	\caption{A black-box diagram explaining the inputs and outputs of the pieces of the tag controller evaluation framework.}
 	\label{fig:bbx}
 \end{figure}
@@ -207,5 +222,5 @@ The following bullet points detail relevant work completed and preparations made
 \begin{itemize}
 	\item I had read the paper \textit{Efficient Tagged Memory}.
 	\item As I have mentioned, over the summer of 2023 I interned at Arm in the Morello Kernel Team, a team working to port the Linux kernel to Arm’s Morello architecture, which is based on the CHERI model. This gave me a chance to get more familiar with the CHERI model, and provided me with an understanding of how a CHERI tagged memory architecture might structure its pointers, and how tag shadowspace might be laid out and accessed in DRAM.
-	\item My project uses ChampSim, the open-source cache simulator. I also extend this program by adding logging support, by branching from commit \#2b8d3fc28abb6072d7675228418fa7cfe862d4dc. I took no part in contributing to any versions of ChampSim prior to the commit.
+	\item My project uses ChampSim, the open-source cache simulator. I also extend this program by adding logging support, by branching from commit \#2b8d3fc28abb6072d7675228418fa7cfe862d4dc. I took no part in contributing to any versions of ChampSim prior to this commit.
 \end{itemize}

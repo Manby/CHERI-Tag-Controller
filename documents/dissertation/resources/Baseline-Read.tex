@@ -1,0 +1,84 @@
+\definecolor{c6c8ebf}{RGB}{108,142,191}
+\definecolor{cdae8fc}{RGB}{218,232,252}
+\definecolor{c82b366}{RGB}{130,179,102}
+\definecolor{cd5e8d4}{RGB}{213,232,212}
+
+
+\def \globalscale {0.9000000}
+\begin{tikzpicture}[y=1cm, x=1cm, yscale=\globalscale,xscale=\globalscale, every node/.append style={scale=\globalscale}, inner sep=0pt, outer sep=0pt]
+  \path[draw=black,miter limit=10.0] (1.5875, 2.1431) -- (1.5875, 1.614) -- (1.5875, 1.2533);
+
+
+
+  \path[draw=black,fill=black,miter limit=10.0] (1.5875, 1.1144) -- (1.4949, 1.2996) -- (1.5875, 1.2533) -- (1.6801, 1.2996) -- cycle;
+
+
+
+  \path[draw=c6c8ebf,fill=cdae8fc] (0.0, 3.2015) rectangle (3.175, 2.1431);
+
+
+
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text5180) at (1.5743, 2.5532){Fetch line};
+
+
+
+  \end{scope}
+  \path[draw=black,miter limit=10.0] (1.5875, 4.2598) -- (1.5875, 3.37);
+
+
+
+  \path[draw=black,fill=black,miter limit=10.0] (1.5875, 3.2311) -- (1.4949, 3.4163) -- (1.5875, 3.37) -- (1.6801, 3.4163) -- cycle;
+
+
+
+  \path[draw=c82b366,fill=cd5e8d4] (1.5875, 4.789) ellipse (1.5875cm and 0.5292cm);
+
+
+
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text6173) at (1.5743, 4.6699){On Read};
+
+
+
+  \end{scope}
+  \path[draw=c82b366,fill=cd5e8d4] (1.5875, 0.5556) ellipse (1.5875cm and 0.5292cm);
+
+
+
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text905) at (1.5743, 0.4366){Return tag bits};
+
+
+
+  \end{scope}
+  \path[draw=c82b366,fill=cd5e8d4] (4.4979, 5.1858) rectangle (5.0271, 4.6567);
+
+
+
+  \path (4.8683, 5.3181) rectangle (6.7204, 4.5244);
+
+
+
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text5595) at (5.7811, 4.8022){Entry/Exit};
+
+
+
+  \end{scope}
+  \path[draw=c6c8ebf,fill=cdae8fc] (4.4979, 4.5244) rectangle (5.0271, 3.9952);
+
+
+
+  \path (4.7625, 4.6567) rectangle (8.2021, 3.8629);
+
+
+
+  \begin{scope}[fill=black,anchor=south]
+    \node[text=black,anchor=south] (text1223) at (6.4691, 4.1407){Memory operations};
+
+
+
+  \end{scope}
+
+\end{tikzpicture}
