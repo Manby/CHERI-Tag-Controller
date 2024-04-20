@@ -57,11 +57,6 @@ private:
         return {base, offset};
     }
 
-public:
-    explicit Cache(ofstream &output_trace, ofstream &output_log) : data(), trace(std::move(output_trace)), log(std::move(output_log)), i(BASE), prevLogged() {
-        //cout << sizeof(champsim_instr) << endl;
-    }
-
     void logRead(uint64_t addr) {
         DBG cout << "CACHE READ  @ " << addr << endl;
         champsim_instr trace_entry(i++, addressToBaseOffsetPair(addr).first);
@@ -79,6 +74,11 @@ public:
         TST prevLogged.push_back(trace_entry);
         //cout << i++ << " LOGGED: " << (int) trace_entry.ip << "#" << (int) trace_entry.is_branch << "#" << (int) trace_entry.branch_taken << "#" << (int) trace_entry.destination_registers[0] << ":" << (int) trace_entry.destination_registers[1] << "#" << (int) trace_entry.source_registers[0] << ":" << (int) trace_entry.source_registers[1] << ":" << (int) trace_entry.source_registers[2] << ":" << (int) trace_entry.source_registers[3] << "#" << (int) trace_entry.destination_memory[0] << ":" << (int) trace_entry.destination_memory[1] << "#" << (int) trace_entry.source_memory[0] << ":" << (int) trace_entry.source_memory[1] << ":" << (int) trace_entry.source_memory[2] << ":" << (int) trace_entry.source_memory[3] << endl;
         //if (i == 6180) assert(false);
+    }
+
+public:
+    explicit Cache(ofstream &output_trace, ofstream &output_log) : data(), trace(std::move(output_trace)), log(std::move(output_log)), i(BASE), prevLogged() {
+        //cout << sizeof(champsim_instr) << endl;
     }
 
     Cacheline doRead(uint64_t addr) {
