@@ -33,7 +33,7 @@ private:
         bool tag = intermediate >> 7;
         int8_t type = intermediate & 0x7f;  // TODO: excon
 
-        return assumeTag(tag, type);
+        return assumeTag(tag, (initialAccessType) type);
     }
 
     memAccess furnish(llcMiss miss) {
@@ -70,30 +70,14 @@ private:
 public:
     Decoder(ifstream &initial_accesses, ifstream &trace) : initial_accesses(std::move(initial_accesses)), trace(std::move(trace)) {}
 
-    /*
-    size_t Decoder::read_init_accesses(initialAccess *buffer, size_t n) {
-        uint8_t intermediate[n];
-        // TODO: could the reading from the file and the struct conversion happen in parallel? i.e. multithreading
-        size_t numRead = fread(intermediate, 1, n, initial_accesses);
-
-        for (int i = 0; i < numRead; ++i) {
-            bool tag = intermediate[i] >> 7;
-            int8_t type = intermediate[i] & 0x7f;
-            buffer[i] = initialAccess(type, tag);
-        }
-
-        return numRead;
-    }
-    */
-
-    size_t read_llc_misses(vector<memAccess> &buffer, size_t n) {
+    size_t readLLCMisses(vector<memAccess> &buffer, size_t n) {
         auto intermediate = new vector<uint8_t>(16*buffer.size());  // llcMiss is 16 bytes
         // TODO: could the reading from the file and the struct conversion happen in parallel? i.e. multithreading
         trace.read((char *) intermediate->data(), n*16); // TODO: explicit conversion
 
         size_t bytesRead = trace.gcount();
         for (int i = 0; i < bytesRead; i += 16) {
-            auto type = (llcMissType) intermediate->at(i);
+            llcMissType type = (llcMissType) intermediate->at(i);
             uint16_t size = intermediate->at(i+2) + ((uint16_t) intermediate->at(i+3) << 8);
             uint16_t tags = intermediate->at(i+4) + ((uint16_t) intermediate->at(i+5) << 8);
             uint16_t tags_known = intermediate->at(i+6) + ((uint16_t) intermediate->at(i+7) << 8);
@@ -112,7 +96,7 @@ public:
     }
 
 
-    template<size_t n> void getTags(uint64_t base_index, int num_tags, array<uint8_t, n> &buffer) {
+    template<size_t n> void getInitialTags(uint64_t base_index, int num_tags, array<uint8_t, n> &buffer) {
         assert(num_tags % 8 == 0);      // should be a multiple of 8
         uint8_t intermediate[num_tags];
         initial_accesses.seekg(base_index);
@@ -126,7 +110,7 @@ public:
                 byte <<= 1;
                 bool tag = intermediate[8*i + t] >> 7;
                 int8_t type = intermediate[8*i + t] & 0x7f;  // TODO: excon
-                byte |= assumeTag(tag, type) ? 1 : 0;
+                byte |= assumeTag(tag, (initialAccessType) type) ? 1 : 0;
             }
             buffer[i] = byte;
         }

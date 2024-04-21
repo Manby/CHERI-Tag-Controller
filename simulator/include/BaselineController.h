@@ -12,9 +12,7 @@
 
 class BaselineController : public FlatTableController {
 public:
-    BaselineController(Decoder &decoder, ofstream &output_trace, ofstream &output_log) : FlatTableController(output_trace, output_log) {
-        setupCache(decoder);
-    }
+    BaselineController(ofstream &output_trace, ofstream &output_log) : FlatTableController(output_trace, output_log) {}
 
     void handleMemoryAccess(memAccess ax) override {
         uint64_t leaf_base_addr;

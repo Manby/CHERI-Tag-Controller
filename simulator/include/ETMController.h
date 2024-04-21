@@ -33,7 +33,9 @@ protected:
     }
 
 public:
-    ETMController(Decoder &decoder, ofstream &output_trace, ofstream &output_log) : Controller(output_trace, output_log) {
+    ETMController(ofstream &output_trace, ofstream &output_log) : Controller(output_trace, output_log) {}
+
+    void setupCache(Decoder &decoder) override {
         Cacheline root_line, leaf_line;
         uint8_t root_byte;
         bool no_leaves_set;
@@ -45,7 +47,7 @@ public:
                     root_byte <<= 1;
 
                     // focus on this single root tag
-                    decoder.getTags((8*rl+8*rb+rt)*TAG_CACHE_LINE_SIZE*8, TAG_CACHE_LINE_SIZE*8, leaf_line);
+                    decoder.getInitialTags((8*rl+8*rb+rt)*TAG_CACHE_LINE_SIZE*8, TAG_CACHE_LINE_SIZE*8, leaf_line);
 
                     no_leaves_set = isClear(leaf_line);
 
@@ -65,7 +67,7 @@ public:
         uint64_t root_base_addr, root_cacheline_index, leaf_base_addr, leaf_cacheline_index;
         Cacheline root_line, leaf_line;
         pair<uint64_t, uint16_t> result;
-        bool root_tag, leaf_tag;
+        bool root_tag;
 
         switch (ax.type) {
             case ACCESS_TYPE_READ:

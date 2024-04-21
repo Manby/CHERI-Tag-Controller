@@ -16,9 +16,7 @@ private:
     bool cache_type;
 
 public:
-    MorelloController(Decoder &decoder, ofstream &output_trace, ofstream &output_log, bool cache_type) : FlatTableController(output_trace, output_log), cache_type(cache_type) {
-        setupCache(decoder);
-    }
+    MorelloController(ofstream &output_trace, ofstream &output_log, bool cache_type) : FlatTableController(output_trace, output_log), cache_type(cache_type) {}
 
     void handleMemoryAccess(memAccess ax) override {
         uint64_t leaf_base_addr;

@@ -2,6 +2,7 @@
 
 #include "Cache.h"
 #include "trace.h"
+#include "Decoder.h"
 #include <cstdint>
 
 
@@ -9,8 +10,11 @@ class Controller {
 
 protected:
     Cache cache;
+
 public:
     explicit Controller(ofstream &output_trace, ofstream &output_log) : cache(output_trace, output_log) {}
+
+    virtual void setupCache(Decoder &decoder) = 0;
 
     virtual void handleMemoryAccess(memAccess ax) = 0;
 

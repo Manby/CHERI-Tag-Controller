@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     }
 
     auto accesses_buffer = new vector<memAccess>(n);
-    decoder.read_llc_misses(*accesses_buffer, n);
+    decoder.readLLCMisses(*accesses_buffer, n);
     // TODO: below line should fail...? needs revision (this comment might be stale)
     trace.close();
 
@@ -70,21 +70,25 @@ int main(int argc, char *argv[]) {
     if (!strcmp(argv[1], "morello-t")) {
         cout << "Morello tag controller implementation, Tag Cache" << endl;
         MorelloController controller(decoder, output_trace, output_log, true);
+        controller.setupCache(decoder);
         count = simulator.processTrace(decoder, controller, *accesses_buffer, n, log_points);
         cout << "Performed [" << controller.get_num_accesses() << "] accesses" << endl;
     } else if (!strcmp(argv[1], "morello-z")) {
         cout << "Morello tag controller implementation, Zero Cache" << endl;
         MorelloController controller(decoder, output_trace, output_log, false);
+        controller.setupCache(decoder);
         count = simulator.processTrace(decoder, controller, *accesses_buffer, n, log_points);
         cout << "Performed [" << controller.get_num_accesses() << "] accesses" << endl;
     } else if (!strcmp(argv[1], "etm")) {
         cout << "ETM tag controller implementation" << endl;
         ETMController controller(decoder, output_trace, output_log);
+        controller.setupCache(decoder);
         count = simulator.processTrace(decoder, controller, *accesses_buffer, n, log_points);
         cout << "Performed [" << controller.get_num_accesses() << "] accesses" << endl;
     } else {
         cout << "Baseline tag controller implementation" << endl;
         BaselineController controller(decoder, output_trace, output_log);
+        controller.setupCache(decoder);
         count = simulator.processTrace(decoder, controller, *accesses_buffer, n, log_points);
         cout << "Performed [" << controller.get_num_accesses() << "] accesses" << endl;
     }

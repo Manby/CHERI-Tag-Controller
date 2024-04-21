@@ -24,8 +24,8 @@ protected:
         return {tag_base, tag_offset};   // 1 bit (the tag) per 16 bytes (the capability-aligned address)
     }
 
-protected:
-    void setupCache(Decoder &decoder) {
+public:
+    void setupCache(Decoder &decoder) override {
         Cacheline leaf_line;
 
         for (uint64_t rl = 0; rl < LEAF_TABLE_BASE; rl += TAG_CACHE_LINE_SIZE) {        // do one root cacheline line at a time
@@ -33,7 +33,7 @@ protected:
                 for (int rt = 0; rt < 8; ++rt) {                                        // each byte contains 8 tags
 
                     // focus on this single root tag
-                    decoder.getTags((8*rl+8*rb+rt)*TAG_CACHE_LINE_SIZE*8, TAG_CACHE_LINE_SIZE*8, leaf_line);
+                    decoder.getInitialTags((8*rl+8*rb+rt)*TAG_CACHE_LINE_SIZE*8, TAG_CACHE_LINE_SIZE*8, leaf_line);
 
                     cache.set(TAG_CACHE_LINE_SIZE*(8*rl+8*rb+rt), leaf_line);     // insert the leaf line into the cache
                 }

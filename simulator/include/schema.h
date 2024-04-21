@@ -16,7 +16,7 @@ constexpr uint64_t LEAF_TABLE_BASE = MEMORY_SIZE >> 16;
 
 #define QEMU_BASE_ADDRESS 0x80000000 // 2^31
 
-bool assumeTag(bool tag, int8_t type) {
+bool assumeTag(bool tag, initialAccessType type) {
     switch (type) {
         case INITIAL_ACCESS_TYPE_INSTR:
         case INITIAL_ACCESS_TYPE_LOAD:
