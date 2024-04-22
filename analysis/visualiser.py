@@ -4,7 +4,7 @@ import subprocess
 import struct
 from PIL import Image, ImageDraw
 
-parser = argparse.ArgumentParser(description='Visualise the state of the cache at given points in execution of a workload.')
+parser = argparse.ArgumentParser(description='Visualise the state of the table and cache at given points in the execution of a workload.')
 parser.add_argument('logpoints', metavar='P', type=str, nargs='+', help='the integer index of the instructions after executing which a visualisation of the cache will be made')
 parser.add_argument('-i', dest='initial_state', type=str, required=True)
 parser.add_argument('-l', dest='llc_requests', type=str, required=True)
@@ -206,44 +206,3 @@ elif parsed_args.scheme == "etm":
 
             img.save(parsed_args.output+"-"+str(p)+".png")
             print("Saved", parsed_args.output+"-"+str(p)+".png")
-
-            '''
-            print("Drawing root section")
-            for i in range(R*8):
-                byte = dram_raw[i//8]
-                bit = byte & (i%8)
-                in_cache = (i//512)*64 in cache
-
-                if bit and in_cache:
-                    colour = (255, 128, 0)
-                elif not bit and in_cache:
-                    colour = (128, 255, 128)
-                elif bit and not in_cache:
-                    colour = (255, 0, 0)
-                elif not bit and not in_cache:
-                    colour = (255, 255, 255)
-
-                pixels[i%RX, i//RX] = colour
-
-            print("Drawing leaf section")
-            for b in range(L):
-                byte = dram_raw[R + b]
-                in_cache_direct = R + (b//64)*64 in cache
-                in_cache_indirect = (b//(64*64))*64 in cache
-                in_cache = in_cache_direct or in_cache_indirect
-                for i in range(8):
-                    bit = byte & (1<<i)
-
-                    if bit and in_cache:
-                        colour = (0, 128, 255)
-                    elif not bit and in_cache:
-                        colour = (128, 255, 128)
-                    elif bit and not in_cache:
-                        colour = (0, 0, 255)
-                    elif not bit and not in_cache:
-                        colour = (255, 255, 255)
-
-                    pixels[(8*b+i)%LX, ((8*b+i)//LX)+RY] = colour
-
-            img.save(parsed_args.output+"-"+str(p)+".png")
-            '''

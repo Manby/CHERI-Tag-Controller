@@ -22,12 +22,11 @@ public:
         cache.dump();
     }
 
-    int get_num_accesses() {
-        return cache.get_num_accesses();
+    int getNumAccesses() {
+        return cache.getNumAccesses();
     }
 
-
-    vector<champsim_instr> getPrevLogged() {
+    vector<champsimInstr> getPrevLogged() {
         return cache.getPrevLogged();
     }
 };

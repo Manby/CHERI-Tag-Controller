@@ -6,7 +6,7 @@
 void checkAddrMapping(Controller &controller, access_type type, uint64_t addr, uint64_t target) {
     memAccess ax1{type, 64, 0b1101, addr};
     controller.handleMemoryAccess(ax1);
-    champsim_instr logged = controller.getPrevLogged().back();
+    champsimInstr logged = controller.getPrevLogged().back();
     EXPECT_EQ(logged.source_memory[0], target);
 }
 
@@ -47,7 +47,7 @@ TEST(BaselineControllerTest, CacheStorage) {
 
     memAccess ax1{ACCESS_TYPE_READ, 64, 0b0000, 0xabcdcafe};
     controller.handleMemoryAccess(ax1);
-    champsim_instr logged = ;
+    champsimInstr logged = ;
     EXPECT_EQ(logged.source_memory[0], target);
 }
 */

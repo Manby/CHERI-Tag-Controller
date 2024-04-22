@@ -17,7 +17,7 @@ constexpr int BASE = 0x100000;
 constexpr size_t NUM_INSTR_DESTINATIONS = 2;
 constexpr size_t NUM_INSTR_SOURCES = 4;
 
-struct champsim_instr {
+struct champsimInstr {
     // instruction pointer or PC (Program Counter)
     unsigned long long ip;
 
@@ -32,7 +32,7 @@ struct champsim_instr {
     unsigned long long source_memory[NUM_INSTR_SOURCES];           // input memory
 
     // TODO: revise
-    champsim_instr(uint64_t ip, uint64_t addr) : ip(ip), is_branch(0), branch_taken(0), destination_registers{}, source_registers{}, destination_memory{}, source_memory{} {
+    champsimInstr(uint64_t ip, uint64_t addr) : ip(ip), is_branch(0), branch_taken(0), destination_registers{}, source_registers{}, destination_memory{}, source_memory{} {
         //if (addr == 0) cout << "ADDR IS ZERO" << endl;
         source_memory[0] = addr;
     }
@@ -47,7 +47,7 @@ private:
     map<uint64_t, Cacheline> data;
     ofstream trace;
     ofstream log;
-    vector<champsim_instr> prevLogged;
+    vector<champsimInstr> prevLogged;
     int i;
 
     static std::pair<uint64_t, uint16_t> addressToBaseOffsetPair(uint64_t addr) {  // converts an address into the base address of its cacheline and the offset into the cacheline
@@ -59,7 +59,7 @@ private:
 
     void logRead(uint64_t addr) {
         DBG cout << "CACHE READ  @ " << addr << endl;
-        champsim_instr trace_entry(i++, addressToBaseOffsetPair(addr).first);
+        champsimInstr trace_entry(i++, addressToBaseOffsetPair(addr).first);
         trace.write((char *) &trace_entry, sizeof(trace_entry));
         TST prevLogged.push_back(trace_entry);
         //cout << i++ << " LOGGED: " << (int) trace_entry.ip << "#" << (int) trace_entry.is_branch << "#" << (int) trace_entry.branch_taken << "#" << (int) trace_entry.destination_registers[0] << ":" << (int) trace_entry.destination_registers[1] << "#" << (int) trace_entry.source_registers[0] << ":" << (int) trace_entry.source_registers[1] << ":" << (int) trace_entry.source_registers[2] << ":" << (int) trace_entry.source_registers[3] << "#" << (int) trace_entry.destination_memory[0] << ":" << (int) trace_entry.destination_memory[1] << "#" << (int) trace_entry.source_memory[0] << ":" << (int) trace_entry.source_memory[1] << ":" << (int) trace_entry.source_memory[2] << ":" << (int) trace_entry.source_memory[3] << endl;
@@ -69,7 +69,7 @@ private:
     void logWrite(uint64_t addr) {
         DBG cout << "CACHE WRITE @ " << addr << endl;
         // TODO: store data in dict when appropriate
-        champsim_instr trace_entry(i++, addressToBaseOffsetPair(addr).first);
+        champsimInstr trace_entry(i++, addressToBaseOffsetPair(addr).first);
         trace.write((char *) &trace_entry, sizeof(trace_entry));
         TST prevLogged.push_back(trace_entry);
         //cout << i++ << " LOGGED: " << (int) trace_entry.ip << "#" << (int) trace_entry.is_branch << "#" << (int) trace_entry.branch_taken << "#" << (int) trace_entry.destination_registers[0] << ":" << (int) trace_entry.destination_registers[1] << "#" << (int) trace_entry.source_registers[0] << ":" << (int) trace_entry.source_registers[1] << ":" << (int) trace_entry.source_registers[2] << ":" << (int) trace_entry.source_registers[3] << "#" << (int) trace_entry.destination_memory[0] << ":" << (int) trace_entry.destination_memory[1] << "#" << (int) trace_entry.source_memory[0] << ":" << (int) trace_entry.source_memory[1] << ":" << (int) trace_entry.source_memory[2] << ":" << (int) trace_entry.source_memory[3] << endl;
@@ -78,7 +78,7 @@ private:
 
 public:
     explicit Cache(ofstream &output_trace, ofstream &output_log) : data(), trace(std::move(output_trace)), log(std::move(output_log)), i(BASE), prevLogged() {
-        //cout << sizeof(champsim_instr) << endl;
+        //cout << sizeof(champsimInstr) << endl;
     }
 
     Cacheline doRead(uint64_t addr) {
@@ -126,11 +126,11 @@ public:
         }
     }
 
-    int get_num_accesses() {
+    int getNumAccesses() {
         return i-BASE;
     }
 
-    vector<champsim_instr> getPrevLogged() {
+    vector<champsimInstr> getPrevLogged() {
         return prevLogged;
     }
 };

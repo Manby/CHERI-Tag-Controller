@@ -69,28 +69,28 @@ int main(int argc, char *argv[]) {
 
     if (!strcmp(argv[1], "morello-t")) {
         cout << "Morello tag controller implementation, Tag Cache" << endl;
-        MorelloController controller(decoder, output_trace, output_log, true);
+        MorelloController controller(output_trace, output_log, true);
         controller.setupCache(decoder);
         count = simulator.processTrace(decoder, controller, *accesses_buffer, n, log_points);
-        cout << "Performed [" << controller.get_num_accesses() << "] accesses" << endl;
+        cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
     } else if (!strcmp(argv[1], "morello-z")) {
         cout << "Morello tag controller implementation, Zero Cache" << endl;
-        MorelloController controller(decoder, output_trace, output_log, false);
+        MorelloController controller(output_trace, output_log, false);
         controller.setupCache(decoder);
         count = simulator.processTrace(decoder, controller, *accesses_buffer, n, log_points);
-        cout << "Performed [" << controller.get_num_accesses() << "] accesses" << endl;
+        cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
     } else if (!strcmp(argv[1], "etm")) {
         cout << "ETM tag controller implementation" << endl;
-        ETMController controller(decoder, output_trace, output_log);
+        ETMController controller(output_trace, output_log);
         controller.setupCache(decoder);
         count = simulator.processTrace(decoder, controller, *accesses_buffer, n, log_points);
-        cout << "Performed [" << controller.get_num_accesses() << "] accesses" << endl;
+        cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
     } else {
         cout << "Baseline tag controller implementation" << endl;
-        BaselineController controller(decoder, output_trace, output_log);
+        BaselineController controller(output_trace, output_log);
         controller.setupCache(decoder);
         count = simulator.processTrace(decoder, controller, *accesses_buffer, n, log_points);
-        cout << "Performed [" << controller.get_num_accesses() << "] accesses" << endl;
+        cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
     }
 
     cout << "Processed " << count << " entries" << endl;

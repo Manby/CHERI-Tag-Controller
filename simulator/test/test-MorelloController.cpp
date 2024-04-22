@@ -16,7 +16,7 @@ TEST(MorelloControllerZeroTest, ReadAccessSequence) {
     // zero cache should handle this one
     memAccess ax1{ACCESS_TYPE_READ, 64, 0b0000, 0xabcdcaf};
     controller.handleMemoryAccess(ax1);
-    vector<champsim_instr> logged = controller.getPrevLogged();
+    vector<champsimInstr> logged = controller.getPrevLogged();
     ASSERT_EQ(logged.size(), 1);
     EXPECT_EQ(logged.back().source_memory[0], 0xabcc0*2);
 
@@ -41,7 +41,7 @@ TEST(MorelloControllerZeroTest, WriteAccessSequence) {
     // zero cache should handle this one
     memAccess ax1{ACCESS_TYPE_WRITE, 64, 0b0000, 0xabcdcaf};
     controller.handleMemoryAccess(ax1);
-    vector<champsim_instr> logged = controller.getPrevLogged();
+    vector<champsimInstr> logged = controller.getPrevLogged();
     ASSERT_EQ(logged.size(), 1);
     EXPECT_EQ(logged.back().source_memory[0], 0xabcc0*2);
 
