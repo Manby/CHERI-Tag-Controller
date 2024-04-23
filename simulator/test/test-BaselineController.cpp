@@ -17,7 +17,7 @@ TEST(BaselineControllerTest, AddressMapping) {
 
     ofstream output_trace{"test_output_trace"};
     ofstream output_log{"test_output_log"};
-    BaselineController controller(decoder, output_trace, output_log);
+    BaselineController controller(output_trace, output_log);
 
     checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0x0000, 0);
     checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0x0100, 0);

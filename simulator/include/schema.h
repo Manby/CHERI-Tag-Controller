@@ -4,7 +4,7 @@
 #include <array>
 
 constexpr bool ksw_debug = false;
-constexpr bool ksw_testing = true;
+constexpr bool ksw_testing = false;
 #define DBG if (ksw_debug)
 #define TST if (ksw_testing)
 

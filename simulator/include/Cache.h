@@ -32,9 +32,10 @@ struct champsimInstr {
     unsigned long long source_memory[NUM_INSTR_SOURCES];           // input memory
 
     // TODO: revise
-    champsimInstr(uint64_t ip, uint64_t addr) : ip(ip), is_branch(0), branch_taken(0), destination_registers{}, source_registers{}, destination_memory{}, source_memory{} {
-        //if (addr == 0) cout << "ADDR IS ZERO" << endl;
-        source_memory[0] = addr;
+    champsimInstr(int64_t ip, uint64_t addr, bool isRead) : ip(ip), is_branch(0), branch_taken(0), destination_registers{}, source_registers{}, destination_memory{}, source_memory{} {
+        if (addr == 0) addr = 1 << 31; // to prevent champsim from ignoring 0x0 accesses
+        if (isRead) source_memory[0] = addr;
+        else destination_memory[0] = addr;
     }
 };
 
@@ -59,7 +60,7 @@ private:
 
     void logRead(uint64_t addr) {
         DBG cout << "CACHE READ  @ " << addr << endl;
-        champsimInstr trace_entry(i++, addressToBaseOffsetPair(addr).first);
+        champsimInstr trace_entry(i++, addressToBaseOffsetPair(addr).first, true);
         trace.write((char *) &trace_entry, sizeof(trace_entry));
         TST prevLogged.push_back(trace_entry);
         //cout << i++ << " LOGGED: " << (int) trace_entry.ip << "#" << (int) trace_entry.is_branch << "#" << (int) trace_entry.branch_taken << "#" << (int) trace_entry.destination_registers[0] << ":" << (int) trace_entry.destination_registers[1] << "#" << (int) trace_entry.source_registers[0] << ":" << (int) trace_entry.source_registers[1] << ":" << (int) trace_entry.source_registers[2] << ":" << (int) trace_entry.source_registers[3] << "#" << (int) trace_entry.destination_memory[0] << ":" << (int) trace_entry.destination_memory[1] << "#" << (int) trace_entry.source_memory[0] << ":" << (int) trace_entry.source_memory[1] << ":" << (int) trace_entry.source_memory[2] << ":" << (int) trace_entry.source_memory[3] << endl;
@@ -69,7 +70,7 @@ private:
     void logWrite(uint64_t addr) {
         DBG cout << "CACHE WRITE @ " << addr << endl;
         // TODO: store data in dict when appropriate
-        champsimInstr trace_entry(i++, addressToBaseOffsetPair(addr).first);
+        champsimInstr trace_entry(i++, addressToBaseOffsetPair(addr).first, false);
         trace.write((char *) &trace_entry, sizeof(trace_entry));
         TST prevLogged.push_back(trace_entry);
         //cout << i++ << " LOGGED: " << (int) trace_entry.ip << "#" << (int) trace_entry.is_branch << "#" << (int) trace_entry.branch_taken << "#" << (int) trace_entry.destination_registers[0] << ":" << (int) trace_entry.destination_registers[1] << "#" << (int) trace_entry.source_registers[0] << ":" << (int) trace_entry.source_registers[1] << ":" << (int) trace_entry.source_registers[2] << ":" << (int) trace_entry.source_registers[3] << "#" << (int) trace_entry.destination_memory[0] << ":" << (int) trace_entry.destination_memory[1] << "#" << (int) trace_entry.source_memory[0] << ":" << (int) trace_entry.source_memory[1] << ":" << (int) trace_entry.source_memory[2] << ":" << (int) trace_entry.source_memory[3] << endl;

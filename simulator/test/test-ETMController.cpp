@@ -18,7 +18,7 @@ TEST(ETMControllerTest, AddressMappingAndReadAccessSequence) {
 
     ofstream output_trace{"test_output_trace"};
     ofstream output_log{"test_output_log"};
-    ETMController controller(decoder, output_trace, output_log);
+    ETMController controller(output_trace, output_log);
 
     uint64_t result;
     result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0x0000);
