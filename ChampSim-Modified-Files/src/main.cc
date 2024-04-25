@@ -107,7 +107,7 @@ int main(int argc, char** argv)
   if (!logfile.empty()) {
 	  output_file.open(copy);
   } else {
-	  output_file.open("output_log");
+	  output_file.open("/dev/null");
   }
 
   auto phase_stats = champsim::main(gen_environment, phases, traces, logpoints, output_file);
