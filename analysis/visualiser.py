@@ -86,6 +86,13 @@ if parsed_args.scheme in ["morello-t", "morello-z", "baseline"]:
 
             cache_raw = cache_f.read(N)
             cache = set(map(lambda x: x[0], struct.iter_unpack('Q', cache_raw)))
+            if (1 << 31) in cache:
+                cache.remove(1 << 31)
+                cache.add(0)
+
+            if 0xffffffff80000000 in cache:
+                print("Removed extraneous 0xffffffff80000000")
+                cache.remove(0xffffffff80000000)
 
             img = Image.new(mode="RGB", size=(LX, LY), color="white")
             pixels = img.load()
@@ -102,7 +109,7 @@ if parsed_args.scheme in ["morello-t", "morello-z", "baseline"]:
 
                 in_cache = (b//64)*64 in cache
                 for i in range(8):
-                    bit = byte & (1<<i)
+                    bit = byte & (1<<(7-i))
 
                     if bit and in_cache:
                         colour = (0, 128, 255)
@@ -137,6 +144,14 @@ elif parsed_args.scheme == "etm":
             cache_raw = cache_f.read(N)
             cache = set(map(lambda x: x[0], struct.iter_unpack('Q', cache_raw)))
 
+            if (1 << 31) in cache:
+                cache.remove(1 << 31)
+                cache.add(0)
+
+            if 0xffffffff80000000 in cache:
+                print("Removed extraneous 0xffffffff80000000")
+                cache.remove(0xffffffff80000000)
+
             img = Image.new(mode="RGB", size=(LX, RY+LY), color="white")
 
             print("Drawing table")
@@ -157,7 +172,7 @@ elif parsed_args.scheme == "etm":
 
                 in_cache = (b//64)*64 in cache
                 for i in range(8):
-                    bit = byte & (1<<i)
+                    bit = byte & (1<<(7-i))
 
                     if bit and in_cache:
                         colour = (255, 128, 0)
@@ -187,7 +202,7 @@ elif parsed_args.scheme == "etm":
                 in_cache_indirect = pixels[(8*b)%LX, (8*b)//LX+RY] == (225, 225, 128)
                 in_cache = in_cache_direct or in_cache_indirect
                 for i in range(8):
-                    bit = byte & (1<<i)
+                    bit = byte & (1<<(7-i))
 
                     if bit and in_cache_direct:
                         colour = (0, 128, 255)

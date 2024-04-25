@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <bitset>
 #include <iostream>
 #include "Controller.h"
 #include "schema.h"

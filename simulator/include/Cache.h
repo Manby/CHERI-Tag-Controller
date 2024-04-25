@@ -33,6 +33,7 @@ struct champsimInstr {
 
     // TODO: revise
     champsimInstr(int64_t ip, uint64_t addr, bool isRead) : ip(ip), is_branch(0), branch_taken(0), destination_registers{}, source_registers{}, destination_memory{}, source_memory{} {
+        //cout << addr << endl;
         if (addr == 0) addr = 1 << 31; // to prevent champsim from ignoring 0x0 accesses
         if (isRead) source_memory[0] = addr;
         else destination_memory[0] = addr;
@@ -83,6 +84,7 @@ public:
     }
 
     Cacheline doRead(uint64_t addr) {
+        assert(addr % TAG_CACHE_LINE_SIZE == 0); // address should be a cacheline base address
         auto it = data.find(addr);
         assert(it != data.end());
         //if (it == data.end()) return {};
@@ -108,6 +110,7 @@ public:
     }
 
     Cacheline peek(uint64_t addr) {
+        assert(addr % TAG_CACHE_LINE_SIZE == 0); // address should be a cacheline base address
         auto it = data.find(addr);
         assert(it != data.end());
         //if (it == data.end()) return {};

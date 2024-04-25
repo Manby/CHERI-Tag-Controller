@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <bitset>
 #include <iostream>
 #include "Controller.h"
 #include "Decoder.h"
@@ -91,7 +90,7 @@ public:
                 return; // we would return whatever the leaf is
 
             case ACCESS_TYPE_WRITE:
-                if (ax.tags == 0) {
+                if (ax.tags != 0) {
                     result = translateToRootAddr(ax.addr);
                     root_base_addr = result.first;
                     root_cacheline_index = result.second;
