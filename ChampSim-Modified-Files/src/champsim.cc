@@ -85,6 +85,20 @@ phase_stats do_phase(phase_info phase, environment& env, std::vector<tracereader
       auto& trace = traces.at(trace_index.at(cpu.cpu));
       for (auto pkt_count = cpu.IN_QUEUE_SIZE - static_cast<long>(std::size(cpu.input_queue)); !trace.eof() && pkt_count > 0; --pkt_count)
         cpu.input_queue.push_back(trace());
+      /*
+  std::for_each(cpu.input_queue.begin(), cpu.input_queue.end(), [&](auto& entry) {
+
+		  for (auto k : entry.source_memory) {
+			  //printf("%lu_", k);
+			if (k == 18446744071562067968ULL) printf("!!!");
+
+		  }
+		  for (auto k : entry.destination_memory) {
+			  //printf("%lu ", k);
+			if (k == 18446744071562067968ULL) printf("!!!");
+		  }
+		  });
+  */
 
       // If any trace reaches EOF, terminate all phases
       if (trace.eof())
@@ -115,8 +129,10 @@ phase_stats do_phase(phase_info phase, environment& env, std::vector<tracereader
                     //std::cout << cache.NAME << std::endl;
                     if (cache.NAME == "cpu0_L1D") {
                         std::vector<CACHE::BLOCK> b = cache.block;
+			//printf("cache block count: %ld\n", b.size());
                         for (CACHE::BLOCK bl : b) {
-			    output_file.write((char*) &bl.address, sizeof(uint64_t));
+			    //if (bl.address % 64 != 0) std::cout << "NON ALIGNED " << bl.address << std::endl;
+			    output_file.write((char*) &bl.v_address, sizeof(uint64_t));
                         }
 			break;
                     }
