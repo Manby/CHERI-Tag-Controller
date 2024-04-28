@@ -5,7 +5,8 @@
 
 uint64_t checkAddrMapping(Controller &controller, access_type type, uint64_t addr) {
     memAccess ax1{type, 64, 0b1101, addr};
-    controller.handleMemoryAccess(ax1);
+    if (ax1.type == ACCESS_TYPE_READ) controller.handleRead(ax1);  // calls are automatically inlined
+    else controller.handleWrite(ax1);
     champsimInstr logged = controller.getPrevLogged().back();
     return logged.source_memory[0];
 }
@@ -33,7 +34,7 @@ TEST(ETMControllerTest, AddressMappingAndReadAccessSequence) {
     result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0b100000000000000); // a non-zero line
     vector<champsimInstr> logged = controller.getPrevLogged();
     EXPECT_EQ(logged.at(logged.size()-2).source_memory[0], 0);
-    EXPECT_EQ(logged.at(logged.size()-1).source_memory[0], LEAF_TABLE_BASE+128);
+    EXPECT_EQ(logged.at(logged.size()-1).source_memory[0], ROOT_TABLE_SIZE+128);
 
     result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0b01111111111111111000000);
     EXPECT_EQ(result, 0);

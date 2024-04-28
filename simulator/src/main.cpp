@@ -3,6 +3,7 @@
 #include "../include/BaselineController.h"
 #include "../include/ETMController.h"
 #include "../include/MorelloController.h"
+#include "../include/PhoenixController.h"
 #include <fstream>
 #include <vector>
 #include <unordered_set>
@@ -13,7 +14,6 @@ int main(int argc, char *argv[]) {
         cout << "Not enough arguments given" << endl;
         return 1;
     }
-
 
     ifstream initial_accesses {argv[2]};
     ifstream trace {argv[3]};
@@ -70,27 +70,38 @@ int main(int argc, char *argv[]) {
     if (!strcmp(argv[1], "morello-t")) {
         cout << "Morello tag controller implementation, Tag Cache" << endl;
         MorelloController controller(output_trace, output_log, true);
-        controller.setupCache(decoder);
-        count = simulator.processTrace(decoder, controller, *accesses_buffer, n, log_points);
+        controller.setup(decoder);
+        count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
         cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
+        controller.reportStats();
     } else if (!strcmp(argv[1], "morello-z")) {
         cout << "Morello tag controller implementation, Zero Cache" << endl;
         MorelloController controller(output_trace, output_log, false);
-        controller.setupCache(decoder);
-        count = simulator.processTrace(decoder, controller, *accesses_buffer, n, log_points);
+        controller.setup(decoder);
+        count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
         cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
+        controller.reportStats();
     } else if (!strcmp(argv[1], "etm")) {
         cout << "ETM tag controller implementation" << endl;
         ETMController controller(output_trace, output_log);
-        controller.setupCache(decoder);
-        count = simulator.processTrace(decoder, controller, *accesses_buffer, n, log_points);
+        controller.setup(decoder);
+        count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
         cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
+        controller.reportStats();
+    } else if (!strcmp(argv[1], "phoenix")) {
+        cout << "Phoenix tag controller implementation" << endl;
+        PhoenixController controller(output_trace, output_log, 8);
+        controller.setup(decoder);
+        count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
+        cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
+        controller.reportStats();
     } else {
         cout << "Baseline tag controller implementation" << endl;
         BaselineController controller(output_trace, output_log);
-        controller.setupCache(decoder);
-        count = simulator.processTrace(decoder, controller, *accesses_buffer, n, log_points);
+        controller.setup(decoder);
+        count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
         cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
+        controller.reportStats();
     }
 
     cout << "Processed " << count << " entries" << endl;

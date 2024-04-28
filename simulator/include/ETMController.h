@@ -17,7 +17,7 @@ protected:
         // TODO: DO I NEED TO SUBTRACT THE SIZE OF THE TAG TABLE ITSELF FROM EACH ADDRESS (BEFORE DOING ANY MATHS WITH IT)?
         // Though this would mean that the few accesses to nullptr would underflow..... perhaps check the source code of the thing that generated the trace files
 
-        uint64_t leaf_base = (((addr_base / 128) >> 6) << 6) + LEAF_TABLE_BASE;  // base address of the tag cacheline (byte address)
+        uint64_t leaf_base = (((addr_base / 128) >> 6) << 6) + ROOT_TABLE_SIZE;  // base address of the tag cacheline (byte address)
         uint16_t leaf_offset = ((addr_base>>6)*4) % 512;         // index into the tag cacheline (bit-index; multiple of 4 in [0,512))
         return {leaf_base, leaf_offset};   // 1 bit (the tag) per 16 bytes (the capability-aligned address)
     }
@@ -34,12 +34,12 @@ protected:
 public:
     ETMController(ofstream &output_trace, ofstream &output_log) : Controller(output_trace, output_log) {}
 
-    void setupCache(Decoder &decoder) override {
+    void setup(Decoder &decoder) override {
         Cacheline root_line, leaf_line;
         uint8_t root_byte;
         bool no_leaves_set;
 
-        for (uint64_t rl = 0; rl < LEAF_TABLE_BASE; rl += TAG_CACHE_LINE_SIZE) {        // do one root cacheline line at a time
+        for (uint64_t rl = 0; rl < ROOT_TABLE_SIZE; rl += TAG_CACHE_LINE_SIZE) {        // do one root cacheline line at a time
             for (int rb = 0; rb < TAG_CACHE_LINE_SIZE; ++rb) {                          // each root cacheline contains TAG_CACHE_LINE_SIZE bytes
                 root_byte = 0;
                 for (int rt = 0; rt < 8; ++rt) {                                        // each byte contains 8 tags
@@ -50,7 +50,7 @@ public:
 
                     no_leaves_set = isClear(leaf_line);
 
-                    cache.set(TAG_CACHE_LINE_SIZE*(8*rl+8*rb+rt) + LEAF_TABLE_BASE, leaf_line);     // insert the leaf line into the cache
+                    cache.set(TAG_CACHE_LINE_SIZE*(8*rl+8*rb+rt) + ROOT_TABLE_SIZE, leaf_line);     // insert the leaf line into the cache
 
                     root_byte |= no_leaves_set ? 0 : 1;
                 }
@@ -62,7 +62,7 @@ public:
         }
     };
 
-    void handleMemoryAccess(memAccess ax) override {
+    uint16_t handleRead(memAccess ax) override {
         uint64_t root_base_addr, root_cacheline_index, leaf_base_addr, leaf_cacheline_index;
         Cacheline root_line, leaf_line;
         pair<uint64_t, uint16_t> result;
@@ -80,14 +80,34 @@ public:
 
                 if (!root_tag) {
                     DBG cout << "Root tag was zero; short circuit!" << endl;
-                    return;   // we would return a 0 to the client
+                    return 0;
                 }
                 TST cout << "READING A NON-ZERO LINE at " << ax.addr << endl;
 
-                leaf_base_addr = translateToLeafAddr(ax.addr).first;
-                cache.doRead(leaf_base_addr);
+                result = translateToLeafAddr(ax.addr);
+                leaf_base_addr = result.first;
+                leaf_cacheline_index = result.second;
+                leaf_line = cache.doRead(leaf_base_addr);
 
-                return; // we would return whatever the leaf is
+                return getTags(leaf_line, leaf_cacheline_index);
+
+            case ACCESS_TYPE_WRITE:
+                assert(false);  // wrong call was made!
+        }
+
+        assert(false);
+        return 0xffff;  // should never get here!
+    }
+
+    void handleWrite(memAccess ax) override {
+        uint64_t root_base_addr, root_cacheline_index, leaf_base_addr, leaf_cacheline_index;
+        Cacheline root_line, leaf_line;
+        pair<uint64_t, uint16_t> result;
+        bool root_tag;
+
+        switch (ax.type) {
+            case ACCESS_TYPE_READ:
+                assert(false);  // wrong call was made!
 
             case ACCESS_TYPE_WRITE:
                 if (ax.tags != 0) {
@@ -114,6 +134,17 @@ public:
                     cache.doWrite(leaf_base_addr, leaf_line);
 
                 } else {
+                    result = translateToRootAddr(ax.addr);
+                    root_base_addr = result.first;
+                    root_cacheline_index = result.second;
+                    root_line = cache.doRead(root_base_addr);
+
+                    root_tag = getTag(root_line, root_cacheline_index);
+
+                    if (!root_tag) {
+                        return;
+                    }
+
                     result = translateToLeafAddr(ax.addr);
                     leaf_base_addr = result.first;
                     leaf_cacheline_index = result.second;

@@ -4,8 +4,12 @@ project(CHERI-Tag-Controller)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(SOURCES
+set(SOURCE1
         src/main.cpp
+)
+
+set(SOURCE2
+        test/verifier.cpp
 )
 
 include_directories(
@@ -21,7 +25,9 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-add_executable(cheri-tag-controller ${SOURCES})
+add_executable(cheri-tag-controller ${SOURCE1})
+
+add_executable(cheri-tag-controller-verifier ${SOURCE2})
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 

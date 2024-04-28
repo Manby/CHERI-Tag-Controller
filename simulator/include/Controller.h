@@ -14,9 +14,11 @@ protected:
 public:
     explicit Controller(ofstream &output_trace, ofstream &output_log) : cache(output_trace, output_log) {}
 
-    virtual void setupCache(Decoder &decoder) = 0;
+    virtual void setup(Decoder &decoder) = 0;
 
-    virtual void handleMemoryAccess(memAccess ax) = 0;
+    virtual uint16_t handleRead(memAccess ax) = 0;
+
+    virtual void handleWrite(memAccess ax) = 0;
 
     void dump_cache() {
         cache.dump();
@@ -29,4 +31,6 @@ public:
     vector<champsimInstr> getPrevLogged() {
         return cache.getPrevLogged();
     }
+
+    virtual void reportStats() {}
 };

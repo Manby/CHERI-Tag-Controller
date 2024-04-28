@@ -24,10 +24,10 @@ protected:
     }
 
 public:
-    void setupCache(Decoder &decoder) override {
+    void setup(Decoder &decoder) override {
         Cacheline leaf_line;
 
-        for (uint64_t rl = 0; rl < LEAF_TABLE_BASE; rl += TAG_CACHE_LINE_SIZE) {        // do one root cacheline line at a time
+        for (uint64_t rl = 0; rl < ROOT_TABLE_SIZE; rl += TAG_CACHE_LINE_SIZE) {        // do one root cacheline line at a time
             for (int rb = 0; rb < TAG_CACHE_LINE_SIZE; ++rb) {                          // each root cacheline contains TAG_CACHE_LINE_SIZE bytes
                 for (int rt = 0; rt < 8; ++rt) {                                        // each byte contains 8 tags
 

@@ -12,7 +12,7 @@ constexpr int TAG_CACHE_LINE_SIZE = 64;      //size of the tag cache's cacheline
 typedef std::array<uint8_t, TAG_CACHE_LINE_SIZE> Cacheline;
 
 constexpr uint64_t MEMORY_SIZE = ((uint64_t) 1) << 31;
-constexpr uint64_t LEAF_TABLE_BASE = MEMORY_SIZE >> 16;
+constexpr uint64_t ROOT_TABLE_SIZE = MEMORY_SIZE >> 16;
 
 #define QEMU_BASE_ADDRESS 0x80000000 // 2^31
 

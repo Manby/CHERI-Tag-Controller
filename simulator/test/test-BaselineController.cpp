@@ -5,7 +5,8 @@
 
 void checkAddrMapping(Controller &controller, access_type type, uint64_t addr, uint64_t target) {
     memAccess ax1{type, 64, 0b1101, addr};
-    controller.handleMemoryAccess(ax1);
+    if (ax1.type == ACCESS_TYPE_READ) controller.handleRead(ax1);  // calls are automatically inlined
+    else controller.handleWrite(ax1);
     champsimInstr logged = controller.getPrevLogged().back();
     EXPECT_EQ(logged.source_memory[0], target);
 }

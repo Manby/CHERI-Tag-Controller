@@ -15,14 +15,14 @@ TEST(MorelloControllerZeroTest, ReadAccessSequence) {
 
     // zero cache should handle this one
     memAccess ax1{ACCESS_TYPE_READ, 64, 0b0000, 0xabcdcaf};
-    controller.handleMemoryAccess(ax1);
+    controller.handleRead(ax1);
     vector<champsimInstr> logged = controller.getPrevLogged();
     ASSERT_EQ(logged.size(), 1);
     EXPECT_EQ(logged.back().source_memory[0], 0xabcc0*2);
 
     // tag cache should handle this one
     memAccess ax2{ACCESS_TYPE_READ, 64, 0b0000, 0x100*128};
-    controller.handleMemoryAccess(ax2);
+    controller.handleRead(ax2);
     logged = controller.getPrevLogged();
     EXPECT_EQ(logged.size(), 1);
 }
