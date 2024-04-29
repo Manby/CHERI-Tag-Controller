@@ -167,14 +167,21 @@ This scheme uses a simple flat DRAM tag table, just like the one in the basic sc
 
 As the tag table has not changed from the simple scheme, the formulae used by the controller for translating addresses are the same (equations \ref{eq:avcas} and \ref{eq:atcas}), and so are the two algorithms (figures \ref{fig:bar} and \ref{fig:baw}).
 
-\subsection{My Project -- A Tag Controller Simulator}
+\subsection{Three-Stage Simulation}
+Part of my project was to develop a simulator that sits in the middle of a three-stage simulation pipeline. The full pipeline enables the simulation and analysis of the tag table and cache behaviour of given CHERI tag controllers.
 
-The objective of my project was to develop a tag controller simulator in C++. When given a workload it should simulate the memory accesses that a specified tag controller algorithm would result in. The idea is that this simulator can be leveraged to provide insight into the performance and inner workings of the tag controller algorithm being simulated, providing useful information to an architect.
+[FIG TSS!!!]
+three-stage simulation pipeline; with additional visualisation stuff too
 
-\subsubsection{The Workloads}
+In this subsection, I explain each of the three stages of simulation.
+
+\subsubsection{Workload Execution -- LLC Miss Simulation}
 A former student had previously created a simulator that consumes a program binary and simulates the execution of the binary on a CHERI architecture. The simulator outputs trace files that log the last-level cache misses that occurred during the simulated execution.
 
 I have been given access to a collection of trace files by my supervisor. These files were logged whilst running various benchmark binaries. The simulator I developed takes these trace files as input. As the tag controller only receives information about LLC misses, the trace files contain sufficient information to determine which accesses would be made by the simulated tag controller algorithm if it were to run the given workload.
+
+\subsubsection{A Tag Controller Simulator}
+The main objective of my project was to develop a tag controller simulator in C++. When given a workload it should simulate the memory accesses that a specified tag controller algorithm would result in. The idea is that this simulator can be leveraged to provide insight into the performance and inner workings of the tag controller algorithm being simulated, providing useful information to an architect.
 
 \subsubsection{ChampSim -- An Appropriate Cache Simulator}
 ChampSim is an open-source trace based cache simulator written in C++. There is more information about ChampSim at the ChampSim GitHub profile page \cite{champsim}.
