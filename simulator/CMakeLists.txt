@@ -25,9 +25,13 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+find_package(ZLIB)
+
 add_executable(cheri-tag-controller ${SOURCE1})
+target_link_libraries(cheri-tag-controller ZLIB::ZLIB)
 
 add_executable(cheri-tag-controller-verifier ${SOURCE2})
+target_link_libraries(cheri-tag-controller-verifier ZLIB::ZLIB)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 
@@ -52,16 +56,19 @@ target_link_libraries(
         baseline_controller_test
         GTest::gtest_main
 )
+target_link_libraries(baseline_controller_test ZLIB::ZLIB)
 
 target_link_libraries(
         morello_controller_test
         GTest::gtest_main
 )
+target_link_libraries(morello_controller_test ZLIB::ZLIB)
 
 target_link_libraries(
         etm_controller_test
         GTest::gtest_main
 )
+target_link_libraries(etm_controller_test ZLIB::ZLIB)
 
 include(GoogleTest)
 gtest_discover_tests(baseline_controller_test)

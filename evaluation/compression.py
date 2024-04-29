@@ -55,7 +55,7 @@ def doRun(scheme, initial_state, llc_requests, n, divisions):
 
     print("\n===== Running tag controller simulator =====\n")
     controllerSimOut = runControllerSimulator(scheme, initial_state,
-                                              llc_requests, "output_trace",
+                                              llc_requests, "output_trace.gz",
                                               str(n),
                                               "out/controller_log",
                                               *logpoints)

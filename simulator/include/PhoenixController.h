@@ -99,7 +99,7 @@ protected:
 
 
 public:
-    PhoenixController(ofstream &output_trace, ofstream &output_log, int twsSize) : Controller(output_trace, output_log), tag_working_set(), allocated(), twsSize(twsSize), dramUsage(), allocCount(0), freeCount(0) {}
+    PhoenixController(gzFile output_trace, ofstream &output_log, int twsSize) : Controller(output_trace, output_log), tag_working_set(), allocated(), twsSize(twsSize), dramUsage(), allocCount(0), freeCount(0) {}
 
     void setup(Decoder &decoder) override {
         Cacheline superroot_line, root_line, leaf_line;

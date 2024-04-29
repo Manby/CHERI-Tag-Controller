@@ -11,7 +11,7 @@
 
 class FlatTableController : public Controller {
 public:
-    explicit FlatTableController(ofstream &output_trace, ofstream &output_log) : Controller(output_trace, output_log) {}
+    explicit FlatTableController(gzFile output_trace, ofstream &output_log) : Controller(output_trace, output_log) {}
 
 protected:
     static std::pair<uint64_t, uint16_t> translateToTagAddr(uint64_t addr_base) {  // converts the base address of a data cacheline to that of the corresponding tag cacheline, and the bit-index into the cacheline where the tags begin

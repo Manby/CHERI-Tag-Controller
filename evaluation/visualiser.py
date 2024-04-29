@@ -19,7 +19,7 @@ parsed_args = parser.parse_args()
 def doRun(scheme, initial_state, llc_requests, n, logpoints, output):
     print("\n===== Running tag controller simulator =====\n")
     controllerSimOut = runControllerSimulator(scheme, initial_state,
-                                              llc_requests, "out/output_trace",
+                                              llc_requests, "out/output_trace.gz",
                                               str(n), "out/controller_log", *logpoints)
     print('\n')
 
@@ -28,7 +28,7 @@ def doRun(scheme, initial_state, llc_requests, n, logpoints, output):
 
     print("\n===== Running ChampSim =====\n")
     runChampsim("--warmup-instructions", "0", "--simulation-instructions",
-                num_accesses, "out/output_trace", "--logpoints",
+                num_accesses, "out/output_trace.gz", "--logpoints",
                 *access_logpoints, "--logfile", "out/champsim_log")
 
 

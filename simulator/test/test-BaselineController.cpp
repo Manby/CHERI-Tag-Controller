@@ -13,10 +13,10 @@ void checkAddrMapping(Controller &controller, access_type type, uint64_t addr, u
 
 TEST(BaselineControllerTest, AddressMapping) {
     ifstream initial_accesses{"/media/Omega/University/Part-II/Project/traces/trace_2023-09-04_22-13-45_507213/trace_initial_state.bin"};
-    ifstream trace {"/media/Omega/University/Part-II/Project/traces/trace_2023-09-04_22-13-45_507213/trace_llc_requests"};
+    gzFile trace = gzopen("/media/Omega/University/Part-II/Project/traces/trace_2023-09-04_22-13-45_507213/trace_llc_requests", "rb");
     Decoder decoder(initial_accesses, trace);
 
-    ofstream output_trace{"test_output_trace"};
+    gzFile output_trace = gzopen("test_output_trace.gz", "wb");
     ofstream output_log{"test_output_log"};
     BaselineController controller(output_trace, output_log);
 

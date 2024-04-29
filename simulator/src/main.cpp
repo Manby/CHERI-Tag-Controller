@@ -5,9 +5,17 @@
 #include "../include/MorelloController.h"
 #include "../include/PhoenixController.h"
 #include <fstream>
-#include <vector>
 #include <unordered_set>
 #include <string.h>
+
+bool endsWithDotGZ(string s) {
+    if (s.size() < 3) return false;
+    if (s[s.size()-3] != '.') return false;
+    if (s[s.size()-2] != 'g') return false;
+    if (s[s.size()-1] != 'z') return false;
+
+    return true;
+}
 
 int main(int argc, char *argv[]) {
     if (argc < 5) {
@@ -15,8 +23,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    ifstream initial_accesses {argv[2]};
-    ifstream trace {argv[3]};
+    ifstream initial_accesses{argv[2]};
+    gzFile trace = gzopen(argv[3], "rb");
 
     if (!initial_accesses) {
         cout << "No file found by the name " << argv[2] << endl;
@@ -51,18 +59,14 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    auto accesses_buffer = new vector<memAccess>(n);
-    decoder.readLLCMisses(*accesses_buffer, n);
-    // TODO: below line should fail...? needs revision (this comment might be stale)
-    trace.close();
-
-    ofstream output_trace {argv[4]};
+    string output_trace_filename = string(argv[4]);
+    if (!endsWithDotGZ(output_trace_filename)) output_trace_filename.append(".gz");
+    gzFile output_trace = gzopen(output_trace_filename.c_str(), "wb");
     if (!output_trace) {
         cout << "Could not open " << argv[4] << " for writing" << endl;
         return 4;
     }
 
-    Simulator simulator{};
     size_t count;
 
     cout << "Beginning simulation using ";
@@ -71,42 +75,40 @@ int main(int argc, char *argv[]) {
         cout << "Morello tag controller implementation, Tag Cache" << endl;
         MorelloController controller(output_trace, output_log, true);
         controller.setup(decoder);
-        count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
+        count = Simulator::processTrace(decoder, controller, n, log_points);
         cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
         controller.reportStats();
     } else if (!strcmp(argv[1], "morello-z")) {
         cout << "Morello tag controller implementation, Zero Cache" << endl;
         MorelloController controller(output_trace, output_log, false);
         controller.setup(decoder);
-        count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
+        count = Simulator::processTrace(decoder, controller, n, log_points);
         cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
         controller.reportStats();
     } else if (!strcmp(argv[1], "etm")) {
         cout << "ETM tag controller implementation" << endl;
         ETMController controller(output_trace, output_log);
         controller.setup(decoder);
-        count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
+        count = Simulator::processTrace(decoder, controller, n, log_points);
         cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
         controller.reportStats();
     } else if (!strcmp(argv[1], "phoenix")) {
         cout << "Phoenix tag controller implementation" << endl;
         PhoenixController controller(output_trace, output_log, 8);
         controller.setup(decoder);
-        count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
+        count = Simulator::processTrace(decoder, controller, n, log_points);
         cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
         controller.reportStats();
     } else {
         cout << "Baseline tag controller implementation" << endl;
         BaselineController controller(output_trace, output_log);
         controller.setup(decoder);
-        count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
+        count = Simulator::processTrace(decoder, controller, n, log_points);
         cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
         controller.reportStats();
     }
 
     cout << "Processed " << count << " entries" << endl;
-
-    delete accesses_buffer;
 
     return 0;
 }

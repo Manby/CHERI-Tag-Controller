@@ -16,7 +16,7 @@ private:
     bool cache_type;
 
 public:
-    MorelloController(ofstream &output_trace, ofstream &output_log, bool cache_type) : FlatTableController(output_trace, output_log), cache_type(cache_type) {}
+    MorelloController(gzFile output_trace, ofstream &output_log, bool cache_type) : FlatTableController(output_trace, output_log), cache_type(cache_type) {}
 
     uint16_t handleRead(memAccess ax) override {
         pair<uint64_t, uint16_t> result;

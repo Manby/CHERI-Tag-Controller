@@ -12,7 +12,7 @@
 
 class BaselineController : public FlatTableController {
 public:
-    BaselineController(ofstream &output_trace, ofstream &output_log) : FlatTableController(output_trace, output_log) {}
+    BaselineController(gzFile output_trace, ofstream &output_log) : FlatTableController(output_trace, output_log) {}
 
     uint16_t handleRead(memAccess ax) override {
         pair<uint64_t, uint16_t> result;

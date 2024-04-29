@@ -32,7 +32,7 @@ protected:
     }
 
 public:
-    ETMController(ofstream &output_trace, ofstream &output_log) : Controller(output_trace, output_log) {}
+    ETMController(gzFile output_trace, ofstream &output_log) : Controller(output_trace, output_log) {}
 
     void setup(Decoder &decoder) override {
         Cacheline root_line, leaf_line;

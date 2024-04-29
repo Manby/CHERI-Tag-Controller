@@ -7,6 +7,7 @@
 #include <iostream>
 #include <vector>
 #include "schema.h"
+#include <zlib.h>
 
 using namespace std;
 
@@ -47,7 +48,7 @@ class Cache {
  */
 private:
     map<uint64_t, Cacheline> data;
-    ofstream trace;
+    gzFile trace;
     ofstream log;
     vector<champsimInstr> prevLogged;
     int i;
@@ -62,24 +63,20 @@ private:
     void logRead(uint64_t addr) {
         DBG cout << "CACHE READ  @ " << addr << endl;
         champsimInstr trace_entry(i++, addressToBaseOffsetPair(addr).first, true);
-        trace.write((char *) &trace_entry, sizeof(trace_entry));
+        gzwrite(trace, (char *) &trace_entry, sizeof(trace_entry));
         TST prevLogged.push_back(trace_entry);
-        //cout << i++ << " LOGGED: " << (int) trace_entry.ip << "#" << (int) trace_entry.is_branch << "#" << (int) trace_entry.branch_taken << "#" << (int) trace_entry.destination_registers[0] << ":" << (int) trace_entry.destination_registers[1] << "#" << (int) trace_entry.source_registers[0] << ":" << (int) trace_entry.source_registers[1] << ":" << (int) trace_entry.source_registers[2] << ":" << (int) trace_entry.source_registers[3] << "#" << (int) trace_entry.destination_memory[0] << ":" << (int) trace_entry.destination_memory[1] << "#" << (int) trace_entry.source_memory[0] << ":" << (int) trace_entry.source_memory[1] << ":" << (int) trace_entry.source_memory[2] << ":" << (int) trace_entry.source_memory[3] << endl;
-        //if (i == 6180) assert(false);
     }
 
     void logWrite(uint64_t addr) {
         DBG cout << "CACHE WRITE @ " << addr << endl;
         // TODO: store data in dict when appropriate
         champsimInstr trace_entry(i++, addressToBaseOffsetPair(addr).first, false);
-        trace.write((char *) &trace_entry, sizeof(trace_entry));
+        gzwrite(trace, (char *) &trace_entry, sizeof(trace_entry));
         TST prevLogged.push_back(trace_entry);
-        //cout << i++ << " LOGGED: " << (int) trace_entry.ip << "#" << (int) trace_entry.is_branch << "#" << (int) trace_entry.branch_taken << "#" << (int) trace_entry.destination_registers[0] << ":" << (int) trace_entry.destination_registers[1] << "#" << (int) trace_entry.source_registers[0] << ":" << (int) trace_entry.source_registers[1] << ":" << (int) trace_entry.source_registers[2] << ":" << (int) trace_entry.source_registers[3] << "#" << (int) trace_entry.destination_memory[0] << ":" << (int) trace_entry.destination_memory[1] << "#" << (int) trace_entry.source_memory[0] << ":" << (int) trace_entry.source_memory[1] << ":" << (int) trace_entry.source_memory[2] << ":" << (int) trace_entry.source_memory[3] << endl;
-        //if (i == 6180) assert(false);
     }
 
 public:
-    explicit Cache(ofstream &output_trace, ofstream &output_log) : data(), trace(std::move(output_trace)), log(std::move(output_log)), i(BASE), prevLogged() {
+    explicit Cache(gzFile output_trace, ofstream &output_log) : data(), trace(output_trace), log(std::move(output_log)), i(BASE), prevLogged() {
         //cout << sizeof(champsimInstr) << endl;
     }
 
@@ -124,8 +121,8 @@ public:
     void dump() {
         cout << "DUMP: " << i-BASE << endl;
         Cacheline line;
-        for (auto it = data.begin(); it != data.end(); it++) {        // do one cacheline line at a time
-            line = it->second;
+        for (auto & it : data) {        // do one cacheline line at a time
+            line = it.second;
             log.write((char *) line.data(), TAG_CACHE_LINE_SIZE);
         }
     }

@@ -12,7 +12,7 @@ protected:
     Cache cache;
 
 public:
-    explicit Controller(ofstream &output_trace, ofstream &output_log) : cache(output_trace, output_log) {}
+    explicit Controller(gzFile output_trace, ofstream &output_log) : cache(output_trace, output_log) {}
 
     virtual void setup(Decoder &decoder) = 0;
 

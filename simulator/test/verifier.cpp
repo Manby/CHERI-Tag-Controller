@@ -11,29 +11,33 @@
 #include <unordered_set>
 #include <string.h>
 
-int verify(Controller &controller, vector<memAccess> &buffer, size_t n) {
+int verify(Decoder &decoder, Controller &controller, size_t n) {
     uint16_t tags, bufferTags;
     size_t i = 0;
     int discrepancies = 0;
 
-    while (i < n) {
-        if (buffer[i].type == ACCESS_TYPE_READ) {
-            tags = controller.handleRead(buffer[i]);  // calls are automatically inlined
-            bufferTags = buffer[i].tags;
-            if (tags != bufferTags) {
-                cout << "TAGS DIFFER AT INSTRUCTION INDEX " << i << endl;
-                cout << "ADDRESS:       " << buffer[i].addr << endl;
-                cout << "TRACE TAGS:    " << bufferTags << endl;
-                cout << "BASELINE TAGS: " << tags << endl;
-                discrepancies++;
-            }
+    vector<memAccess> buffer(CHUNK_SIZE);
+    for (size_t at = 0; at < n; at += CHUNK_SIZE) {
+        size_t read = decoder.readLLCMisses(buffer, min(CHUNK_SIZE, n-at));
 
-        } else controller.handleWrite(buffer[i]);
+        int i = 0;
+        for (size_t remaining = read; remaining > 0; --remaining) {     // CLion hint can be ignored
+            if (buffer[i].type == ACCESS_TYPE_READ) {
+                tags = controller.handleRead(buffer[i]);  // calls are automatically inlined
+                bufferTags = buffer[i].tags;
+                if (tags != bufferTags) {
+                    cout << "TAGS DIFFER AT INSTRUCTION INDEX " << i << endl;
+                    cout << "ADDRESS:       " << buffer[i].addr << endl;
+                    cout << "TRACE TAGS:    " << bufferTags << endl;
+                    cout << "BASELINE TAGS: " << tags << endl;
+                    discrepancies++;
+                }
 
-        ++i;
+            } else controller.handleWrite(buffer[i]);
+
+            ++i;
+        }
     }
-
-    cout << "VERIFY: " << discrepancies << " total discrepancies" << endl;
 
     return discrepancies;
 }
@@ -73,7 +77,7 @@ int main(int argc, char *argv[]) {
     }
 
     ifstream initial_accesses {argv[2]};
-    ifstream trace {argv[3]};
+    gzFile trace = gzopen(argv[3], "rb");
 
     if (!initial_accesses) {
         cout << "No file found by the name " << argv[2] << endl;
@@ -96,15 +100,9 @@ int main(int argc, char *argv[]) {
         n = 5000000;
     }
 
-    auto accesses_buffer = new vector<memAccess>(n);
-    decoder.readLLCMisses(*accesses_buffer, n);
-    // TODO: below line should fail...? needs revision (this comment might be stale)
-    trace.close();
-
-    Simulator simulator{};
     size_t baselineCount, count;
 
-    ofstream output_trace{"/dev/null"};
+    gzFile output_trace = gzopen("/dev/null", "wb");
     ofstream output_log{"/dev/null"};
     unordered_set<size_t> log_points{};
 
@@ -114,14 +112,14 @@ int main(int argc, char *argv[]) {
         cout << "Simulating Baseline" << endl;
         BaselineController baselineController(output_trace, output_log);
         baselineController.setup(decoder);
-        baselineCount = simulator.processTrace(baselineController, *accesses_buffer, n, log_points);
+        baselineCount = Simulator::processTrace(decoder, baselineController, n, log_points);
         cout << "Processed " << baselineCount << " entries" << endl;
 
         if (!strcmp(argv[1], "morello-t")) {
             cout << "Simulating Morello tag controller implementation, Tag Cache" << endl;
             MorelloController controller(output_trace, output_log, true);
             controller.setup(decoder);
-            count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
+            count = Simulator::processTrace(decoder, controller, n, log_points);
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
             controller.reportStats();
 
@@ -132,7 +130,7 @@ int main(int argc, char *argv[]) {
             cout << "Simulating Morello tag controller implementation, Zero Cache" << endl;
             MorelloController controller(output_trace, output_log, false);
             controller.setup(decoder);
-            count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
+            count = Simulator::processTrace(decoder, controller, n, log_points);
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
             controller.reportStats();
 
@@ -143,7 +141,7 @@ int main(int argc, char *argv[]) {
             cout << "Simulating ETM tag controller implementation" << endl;
             ETMController controller(output_trace, output_log);
             controller.setup(decoder);
-            count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
+            count = Simulator::processTrace(decoder, controller, n, log_points);
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
             controller.reportStats();
 
@@ -154,7 +152,7 @@ int main(int argc, char *argv[]) {
             cout << "Simulating Phoenix tag controller implementation" << endl;
             PhoenixController controller(output_trace, output_log, 8);
             controller.setup(decoder);
-            count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
+            count = Simulator::processTrace(decoder, controller, n, log_points);
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
             controller.reportStats();
 
@@ -165,7 +163,7 @@ int main(int argc, char *argv[]) {
             cout << "Simulating Dummy Zero tag controller implementation" << endl;
             DummyZeroController controller(output_trace, output_log);
             controller.setup(decoder);
-            count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
+            count = Simulator::processTrace(decoder, controller, n, log_points);
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
             controller.reportStats();
 
@@ -176,7 +174,7 @@ int main(int argc, char *argv[]) {
             cout << "Simulating Dummy Zero tag controller implementation" << endl;
             DummyOneController controller(output_trace, output_log);
             controller.setup(decoder);
-            count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
+            count = Simulator::processTrace(decoder, controller, n, log_points);
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
             controller.reportStats();
 
@@ -187,7 +185,7 @@ int main(int argc, char *argv[]) {
             cout << "Baseline tag controller implementation" << endl;
             BaselineController controller(output_trace, output_log);
             controller.setup(decoder);
-            count = simulator.processTrace(controller, *accesses_buffer, n, log_points);
+            count = Simulator::processTrace(decoder, controller, n, log_points);
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
             controller.reportStats();
 
@@ -201,10 +199,8 @@ int main(int argc, char *argv[]) {
         BaselineController controller(output_trace, output_log);
         controller.setup(decoder);
 
-        verify(controller, *accesses_buffer, n);
+        verify(decoder, controller, n);
     }
-
-    delete accesses_buffer;
 
     return 0;
 }

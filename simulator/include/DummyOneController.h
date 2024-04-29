@@ -11,7 +11,7 @@
 
 class DummyOneController : public FlatTableController {
 public:
-    DummyOneController(ofstream &output_trace, ofstream &output_log) : FlatTableController(output_trace, output_log) {}
+    DummyOneController(gzFile output_trace, ofstream &output_log) : FlatTableController(output_trace, output_log) {}
 
     uint16_t handleRead(memAccess ax) override {
         switch (ax.type) {

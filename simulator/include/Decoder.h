@@ -8,6 +8,7 @@
 #include "trace.h"
 #include "schema.h"
 #include <cassert>
+#include <zlib.h>
 
 using namespace std;
 
@@ -15,7 +16,7 @@ class Decoder {
 public:
     ifstream initial_accesses;
 private:
-    ifstream trace;
+    gzFile trace;
 
     bool getInitialTag(uint64_t index) {
         assert(index < 134217728); // 2^27 bytes
@@ -68,15 +69,14 @@ private:
     }
 
 public:
-    Decoder(ifstream &initial_accesses, ifstream &trace) : initial_accesses(std::move(initial_accesses)), trace(std::move(trace)) {}
+    Decoder(ifstream &initial_accesses, gzFile trace) : initial_accesses(std::move(initial_accesses)), trace(trace) {}
 
     size_t readLLCMisses(vector<memAccess> &buffer, size_t n) {
         auto intermediate = new vector<uint8_t>(16*buffer.size());  // llcMiss is 16 bytes
         // TODO: could the reading from the file and the struct conversion happen in parallel? i.e. multithreading
-        trace.read((char *) intermediate->data(), n*16); // TODO: explicit conversion
+        size_t bytes_read = gzread(trace, (char *) intermediate->data(), n*16); // TODO: explicit conversion
 
-        size_t bytesRead = trace.gcount();
-        for (int i = 0; i < bytesRead; i += 16) {
+        for (int i = 0; i < bytes_read; i += 16) {
             llcMissType type = (llcMissType) intermediate->at(i);
             uint16_t size = intermediate->at(i+2) + ((uint16_t) intermediate->at(i+3) << 8);
             uint16_t tags = intermediate->at(i+4) + ((uint16_t) intermediate->at(i+5) << 8);
@@ -109,7 +109,7 @@ public:
             buffer[i/16] = furnish(miss);   // convert the llcMiss into an access by furnishing it
         }
 
-        return bytesRead/16;    // return number of llcMiss structs read
+        return bytes_read/16;    // return number of llcMiss structs read
     }
 
 
