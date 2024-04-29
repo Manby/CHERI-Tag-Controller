@@ -45,7 +45,7 @@ private:
         if (miss.tags_known != 15) {
             int i = 0;
             //cout << "this miss has unknown tags: " << miss.tags_known << endl;
-            for (uint16_t base = 16; base >= 1; base >>= 1) {   // left-to-right; MSB-to-LSB
+            for (uint16_t base = 8; base >= 1; base >>= 1) {   // left-to-right; MSB-to-LSB
                 if (!(miss.tags_known & base)) {
                     //cout << "need to look up tag " << i << " for cacheline base address " << miss.addr << endl;
                     uint64_t index = (miss.addr / 16) + i;
@@ -81,6 +81,23 @@ public:
             uint16_t size = intermediate->at(i+2) + ((uint16_t) intermediate->at(i+3) << 8);
             uint16_t tags = intermediate->at(i+4) + ((uint16_t) intermediate->at(i+5) << 8);
             uint16_t tags_known = intermediate->at(i+6) + ((uint16_t) intermediate->at(i+7) << 8);
+
+            // reverse the tags_unknown bits; make LSB the left-most bit
+            uint16_t temp = 0;
+            for (int a = 0; a < 16; a++) {
+                temp |= tags_known & (1 << a);
+                temp <<= 1;
+            }
+            tags_known = temp;
+
+            // reverse the tags bits; make LSB the left-most bit
+            temp = 0;
+            for (int a = 0; a < 16; a++) {
+                temp |= tags & (1 << a);
+                temp <<= 1;
+            }
+            tags = temp;
+
             uint64_t addr = 0;
             for (int j = 0; j < 8; ++j) {
                 addr += ((uint64_t) intermediate->at(i+8+j)) << (8*j);
