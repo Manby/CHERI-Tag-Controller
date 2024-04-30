@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
         BaselineController baselineController(output_trace, output_log);
         baselineController.setup(decoder);
         baselineCount = Simulator::processTrace(decoder, baselineController, n, log_points);
-        cout << "Processed " << baselineCount << " entries" << endl;
+        cout << "Processed [" << baselineCount << "] entries" << endl;
 
         if (!strcmp(argv[1], "morello-t")) {
             cout << "Simulating Morello tag controller implementation, Tag Cache" << endl;
@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
             controller.reportStats();
 
-            cout << "Processed " << count << " entries" << endl;
+            cout << "Processed [" << count << "] entries" << endl;
             assert(count == baselineCount);
             crossVerify(baselineController, controller);
         } else if (!strcmp(argv[1], "morello-z")) {
@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
             controller.reportStats();
 
-            cout << "Processed " << count << " entries" << endl;
+            cout << "Processed [" << count << "] entries" << endl;
             assert(count == baselineCount);
             crossVerify(baselineController, controller);
         } else if (!strcmp(argv[1], "etm")) {
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
             controller.reportStats();
 
-            cout << "Processed " << count << " entries" << endl;
+            cout << "Processed [" << count << "] entries" << endl;
             assert(count == baselineCount);
             crossVerify(baselineController, controller);
         } else if (!strcmp(argv[1], "phoenix")) {
@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
             controller.reportStats();
 
-            cout << "Processed " << count << " entries" << endl;
+            cout << "Processed [" << count << "] entries" << endl;
             assert(count == baselineCount);
             crossVerify(baselineController, controller);
         } else if (!strcmp(argv[1], "dummyzero")) {
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
             controller.reportStats();
 
-            cout << "Processed " << count << " entries" << endl;
+            cout << "Processed [" << count << "] entries" << endl;
             assert(count == baselineCount);
             crossVerify(baselineController, controller);
         } else if (!strcmp(argv[1], "dummyone")) {
@@ -179,7 +179,7 @@ int main(int argc, char *argv[]) {
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
             controller.reportStats();
 
-            cout << "Processed " << count << " entries" << endl;
+            cout << "Processed [" << count << "] entries" << endl;
             assert(count == baselineCount);
             crossVerify(baselineController, controller);
         } else {
@@ -190,7 +190,7 @@ int main(int argc, char *argv[]) {
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
             controller.reportStats();
 
-            cout << "Processed " << count << " entries" << endl;
+            cout << "Processed [" << count << "] entries" << endl;
             assert(count == baselineCount);
             crossVerify(baselineController, controller);
         }

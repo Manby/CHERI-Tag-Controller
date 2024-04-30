@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
         controller.reportStats();
     }
 
-    cout << "Processed " << count << " entries" << endl;
+    cout << "Processed [" << count << "] entries" << endl;
 
     gzclose(trace);
     gzclose(output_trace);

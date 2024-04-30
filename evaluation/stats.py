@@ -21,7 +21,10 @@ def doRun(scheme, initial_state, llc_requests, n, warmup):
     controllerStats = getControllerStats(controllerSimOut)
     if (controllerStats): controllerStats = {'blocks': controllerStats}
 
+    num_entries = getNumEntries(controllerSimOut)
     num_accesses = getNumAccesses(controllerSimOut)
+
+    controllerStats['entries'] = num_entries
 
     num_warmup = round(warmup * int(num_accesses))
     num_simulation = int(num_accesses) - num_warmup

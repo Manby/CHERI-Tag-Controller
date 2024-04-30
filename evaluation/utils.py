@@ -46,6 +46,13 @@ def getAccessLogpoints(controllerSimOut):
 
     return access_logpoints
 
+def getNumEntries(controllerSimOut):
+    for line in controllerSimOut.split('\n'):
+        if "Processed" in line:
+            num_entries = line[line.find("[")+1:line.find("]")]
+
+    return num_entries
+
 def getNumAccesses(controllerSimOut):
     for line in controllerSimOut.split('\n'):
         if "Performed" in line:
