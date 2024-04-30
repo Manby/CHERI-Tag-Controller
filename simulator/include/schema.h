@@ -4,7 +4,7 @@
 #include <array>
 
 constexpr bool ksw_debug = false;
-constexpr bool ksw_testing = false;
+constexpr bool ksw_testing = true;
 #define DBG if (ksw_debug)
 #define TST if (ksw_testing)
 
@@ -13,6 +13,8 @@ typedef std::array<uint8_t, TAG_CACHE_LINE_SIZE> Cacheline;
 
 constexpr uint64_t MEMORY_SIZE = ((uint64_t) 1) << 31;
 constexpr uint64_t ROOT_TABLE_SIZE = MEMORY_SIZE >> 16;
+
+constexpr uint64_t CSZERO = 1 << 31;
 
 #define QEMU_BASE_ADDRESS 0x80000000 // 2^31
 

@@ -52,6 +52,11 @@ add_executable(
         test/test-ETMController.cpp
 )
 
+add_executable(
+        phoenix_controller_test
+        test/test-PhoenixController.cpp
+)
+
 target_link_libraries(
         baseline_controller_test
         GTest::gtest_main
@@ -70,7 +75,14 @@ target_link_libraries(
 )
 target_link_libraries(etm_controller_test ZLIB::ZLIB)
 
+target_link_libraries(
+        phoenix_controller_test
+        GTest::gtest_main
+)
+target_link_libraries(phoenix_controller_test ZLIB::ZLIB)
+
 include(GoogleTest)
 gtest_discover_tests(baseline_controller_test)
 gtest_discover_tests(morello_controller_test)
 gtest_discover_tests(etm_controller_test)
+gtest_discover_tests(phoenix_controller_test)

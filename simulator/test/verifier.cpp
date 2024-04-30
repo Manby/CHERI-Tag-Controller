@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
             crossVerify(baselineController, controller);
         } else if (!strcmp(argv[1], "phoenix")) {
             cout << "Simulating Phoenix tag controller implementation" << endl;
-            PhoenixController controller(output_trace, output_log, 8);
+            PhoenixController controller(output_trace, output_log, 8, true);
             controller.setup(decoder);
             count = Simulator::processTrace(decoder, controller, n, log_points);
             cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;

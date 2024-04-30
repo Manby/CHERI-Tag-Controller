@@ -34,7 +34,7 @@ struct champsimInstr {
     // TODO: revise
     champsimInstr(int64_t ip, uint64_t addr, bool isRead) : ip(ip), is_branch(0), branch_taken(0), destination_registers{}, source_registers{}, destination_memory{}, source_memory{} {
         //cout << addr << endl;
-        if (addr == 0) addr = 1 << 31; // to prevent champsim from ignoring 0x0 accesses
+        if (addr == 0) addr = CSZERO; // to prevent champsim from ignoring 0x0 accesses
         if (isRead) source_memory[0] = addr;
         else destination_memory[0] = addr;
     }

@@ -8,7 +8,8 @@ uint64_t checkAddrMapping(Controller &controller, access_type type, uint64_t add
     if (ax1.type == ACCESS_TYPE_READ) controller.handleRead(ax1);  // calls are automatically inlined
     else controller.handleWrite(ax1);
     champsimInstr logged = controller.getPrevLogged().back();
-    return logged.source_memory[0];
+    if (ax1.type == ACCESS_TYPE_READ) return logged.source_memory[0];
+    else return logged.destination_memory[0];
 }
 
 // Root: //128 //512 (== <<7 <<9)
@@ -20,24 +21,27 @@ TEST(ETMControllerTest, AddressMappingAndReadAccessSequence) {
     gzFile output_trace = gzopen("test_output_trace.gz", "wb");
     ofstream output_log{"test_output_log"};
     ETMController controller(output_trace, output_log);
+    controller.setup(decoder);
 
     uint64_t result;
     result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0x0000);
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, CSZERO);
     result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0x0100);
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, CSZERO);
 
     result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0b01111111000000);
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, CSZERO);
     result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0b10000000000000);
-    EXPECT_EQ(result, 0);
-    result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0b100000000000000); // a non-zero line
+    EXPECT_EQ(result, CSZERO);
+
+    checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0b100000000000000); // create a non-zero line
+    result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0b100000000000000); // read the non-zero line
     vector<champsimInstr> logged = controller.getPrevLogged();
-    EXPECT_EQ(logged.at(logged.size()-2).source_memory[0], 0);
-    EXPECT_EQ(logged.at(logged.size()-1).source_memory[0], ROOT_TABLE_SIZE+128);
+    EXPECT_EQ(logged.at(logged.size()-2).source_memory[0], CSZERO);
+    EXPECT_EQ(logged.at(logged.size()-1).source_memory[0], ((uint64_t) ROOT_TABLE_SIZE+128));
 
     result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0b01111111111111111000000);
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, CSZERO);
     result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0b10000000000000000000000);
     EXPECT_EQ(result, 64);
 

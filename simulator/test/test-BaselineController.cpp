@@ -3,12 +3,13 @@
 #include "../include/BaselineController.h"
 #include <iostream>
 
-void checkAddrMapping(Controller &controller, access_type type, uint64_t addr, uint64_t target) {
+uint64_t checkAddrMapping(Controller &controller, access_type type, uint64_t addr) {
     memAccess ax1{type, 64, 0b1101, addr};
     if (ax1.type == ACCESS_TYPE_READ) controller.handleRead(ax1);  // calls are automatically inlined
     else controller.handleWrite(ax1);
     champsimInstr logged = controller.getPrevLogged().back();
-    EXPECT_EQ(logged.source_memory[0], target);
+    if (ax1.type == ACCESS_TYPE_READ) return logged.source_memory[0];
+    else return logged.destination_memory[0];
 }
 
 TEST(BaselineControllerTest, AddressMapping) {
@@ -19,25 +20,40 @@ TEST(BaselineControllerTest, AddressMapping) {
     gzFile output_trace = gzopen("test_output_trace.gz", "wb");
     ofstream output_log{"test_output_log"};
     BaselineController controller(output_trace, output_log);
+    controller.setup(decoder);
 
-    checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0x0000, 0);
-    checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0x0100, 0);
+    uint64_t result;
+    result = checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0x0000);
+    EXPECT_EQ(result, CSZERO);
 
-    checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0b01111111111111, 0);
-    checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0b10000000000000, 64);
-    checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0b100000000000000, 128);
+    result = checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0x0100);
+    EXPECT_EQ(result, CSZERO);
 
-    checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0xabcdcaf, 0xabcc0*2);
+    result = checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0b01111111111111);
+    EXPECT_EQ(result, CSZERO);
+    result = checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0b10000000000000);
+    EXPECT_EQ(result, 64);
+    result = checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0b100000000000000);
+    EXPECT_EQ(result, 128);
+
+    result = checkAddrMapping(controller, ACCESS_TYPE_WRITE, 0xabcdcaf);
+    EXPECT_EQ(result, 0xabcc0*2);
 
 
-    checkAddrMapping(controller, ACCESS_TYPE_READ, 0x0000, 0);
-    checkAddrMapping(controller, ACCESS_TYPE_READ, 0x0100, 0);
+    result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0x0000);
+    EXPECT_EQ(result, CSZERO);
+    result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0x0100);
+    EXPECT_EQ(result, CSZERO);
 
-    checkAddrMapping(controller, ACCESS_TYPE_READ, 0b01111111111111, 0);
-    checkAddrMapping(controller, ACCESS_TYPE_READ, 0b10000000000000, 64);
-    checkAddrMapping(controller, ACCESS_TYPE_READ, 0b100000000000000, 128);
+    result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0b01111111111111);
+    EXPECT_EQ(result, CSZERO);
+    result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0b10000000000000);
+    EXPECT_EQ(result, 64);
+    result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0b100000000000000);
+    EXPECT_EQ(result, 128);
 
-    checkAddrMapping(controller, ACCESS_TYPE_READ, 0xabcdcaf, 0xabcc0*2);
+    result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0xabcdcaf);
+    EXPECT_EQ(result, 0xabcc0*2);
 
     gzclose(trace);
     gzclose(output_trace);

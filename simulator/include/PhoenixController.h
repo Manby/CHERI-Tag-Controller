@@ -22,6 +22,7 @@ protected:
     vector<uint16_t> tag_working_set;    // set of blocks in the current tag working set; ordered by LRU policy, with LRU at the front
     unordered_set<uint16_t> allocated;          // set of blocks that currently have an allocated portion of DRAM
     uint16_t twsSize;                           // maximum size of the tag working set
+    bool useTrueLRU;                            // whether we are using true LRU or an approximation of it
     unordered_map<uint16_t, int> dramUsage;
     int allocCount, freeCount;
 
@@ -59,6 +60,11 @@ protected:
         return (addr / 65536) >> 6;     // leaves only the top 9 bits of the addr (so its in the range [0,512))
     }
 
+    bool isBlockClear(uint16_t index) {
+        Cacheline line = memory.doRead(0);
+        return !getTag(line, index);
+    }
+
     bool isInTWS(uint16_t index) {
         return find(tag_working_set.begin(), tag_working_set.end(), index) != tag_working_set.end();
     }
@@ -73,19 +79,23 @@ protected:
     uint16_t updateTWS(uint16_t index) {           // returns the index of the evicted block
         if (isInTWS(index)) {
             promote(index);
-            return -1;
+            return 0xffff;
         }
 
         tag_working_set.push_back(index);
 
         if (tag_working_set.size() == twsSize) {
             auto it = tag_working_set.begin();
+            if (!useTrueLRU) for (int i = 2; i < twsSize; i++) it++;  // if approximating LRU, evict the second-most-recently used, to provide a worst-case bound
             uint16_t evicted = *it;
-            tag_working_set.erase(it);     // evict LRU
+            tag_working_set.erase(it);     // evict victim
+
+            if (isBlockClear(evicted)) DRAMFree(evicted);
+
             return evicted;
         }
 
-        return -1;
+        return 0xffff;
     }
 
     void DRAMAllocate(uint16_t index) {
@@ -110,7 +120,7 @@ protected:
 
 
 public:
-    PhoenixController(gzFile output_trace, ofstream &output_log, int twsSize) : Controller(output_trace, output_log), tag_working_set(), allocated(), twsSize(twsSize), dramUsage(), allocCount(0), freeCount(0) {}
+    PhoenixController(gzFile output_trace, ofstream &output_log, int twsSize, bool useTrueLRU) : Controller(output_trace, output_log), tag_working_set(), allocated(), twsSize(twsSize), useTrueLRU(useTrueLRU), dramUsage(), allocCount(0), freeCount(0) {}
 
     void setup(Decoder &decoder) override {
         Cacheline superroot_line, root_line, leaf_line;

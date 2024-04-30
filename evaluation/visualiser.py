@@ -180,7 +180,7 @@ def doRun(scheme, initial_state, llc_requests, n, logpoints, output):
                 img.save("images/"+output+"-"+str(p)+".png")
                 print("Saved", "images/"+output+"-"+str(p)+".png")
 
-    elif scheme == "phoenix":
+    elif scheme.startswith("phoenix"):
         L = 2**24   # size in bytes of the tag leaf table
         R = L//512  # size in bytes of the tag root table
         S = R//512  # size in bytes of the tag superroot table

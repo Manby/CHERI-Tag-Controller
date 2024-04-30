@@ -12,6 +12,7 @@ TEST(MorelloControllerZeroTest, ReadAccessSequence) {
     ofstream output_log{"test_output_log"};
 
     MorelloController controller(output_trace, output_log, false);
+    controller.setup(decoder);
 
     // zero cache should handle this one
     memAccess ax1{ACCESS_TYPE_READ, 64, 0b0000, 0xabcdcaf};

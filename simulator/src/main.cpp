@@ -91,9 +91,44 @@ int main(int argc, char *argv[]) {
         count = Simulator::processTrace(decoder, controller, n, log_points);
         cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
         controller.reportStats();
-    } else if (!strcmp(argv[1], "phoenix")) {
-        cout << "Phoenix tag controller implementation" << endl;
-        PhoenixController controller(output_trace, output_log, 8);
+    } else if (!strcmp(argv[1], "phoenix-8t")) {
+        cout << "Phoenix tag controller implementation; TWS=8, True LRU" << endl;
+        PhoenixController controller(output_trace, output_log, 8, true);
+        controller.setup(decoder);
+        count = Simulator::processTrace(decoder, controller, n, log_points);
+        cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
+        controller.reportStats();
+    } else if (!strcmp(argv[1], "phoenix-8f")) {
+        cout << "Phoenix tag controller implementation; TWS=8, False LRU" << endl;
+        PhoenixController controller(output_trace, output_log, 8, false);
+        controller.setup(decoder);
+        count = Simulator::processTrace(decoder, controller, n, log_points);
+        cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
+        controller.reportStats();
+    } else if (!strcmp(argv[1], "phoenix-4t")) {
+        cout << "Phoenix tag controller implementation; TWS=4, True LRU" << endl;
+        PhoenixController controller(output_trace, output_log, 4, true);
+        controller.setup(decoder);
+        count = Simulator::processTrace(decoder, controller, n, log_points);
+        cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
+        controller.reportStats();
+    } else if (!strcmp(argv[1], "phoenix-4f")) {
+        cout << "Phoenix tag controller implementation; TWS=4, False LRU" << endl;
+        PhoenixController controller(output_trace, output_log, 4, false);
+        controller.setup(decoder);
+        count = Simulator::processTrace(decoder, controller, n, log_points);
+        cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
+        controller.reportStats();
+    } else if (!strcmp(argv[1], "phoenix-2t")) {
+        cout << "Phoenix tag controller implementation; TWS=2, True LRU" << endl;
+        PhoenixController controller(output_trace, output_log, 2, true);
+        controller.setup(decoder);
+        count = Simulator::processTrace(decoder, controller, n, log_points);
+        cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
+        controller.reportStats();
+    } else if (!strcmp(argv[1], "phoenix-2f")) {
+        cout << "Phoenix tag controller implementation; TWS=2, False LRU" << endl;
+        PhoenixController controller(output_trace, output_log, 2, false);
         controller.setup(decoder);
         count = Simulator::processTrace(decoder, controller, n, log_points);
         cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
