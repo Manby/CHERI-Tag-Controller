@@ -72,15 +72,15 @@ public:
     Decoder(ifstream &initial_accesses, gzFile trace) : initial_accesses(std::move(initial_accesses)), trace(trace) {}
 
     size_t readLLCMisses(vector<memAccess> &buffer, size_t n) {
-        auto intermediate = new vector<uint8_t>(16*buffer.size());  // llcMiss is 16 bytes
+        auto intermediate = vector<uint8_t>(16*buffer.size());  // llcMiss is 16 bytes
         // TODO: could the reading from the file and the struct conversion happen in parallel? i.e. multithreading
-        size_t bytes_read = gzread(trace, (char *) intermediate->data(), n*16); // TODO: explicit conversion
+        size_t bytes_read = gzread(trace, (char *) intermediate.data(), n*16); // TODO: explicit conversion
 
         for (int i = 0; i < bytes_read; i += 16) {
-            llcMissType type = (llcMissType) intermediate->at(i);
-            uint16_t size = intermediate->at(i+2) + ((uint16_t) intermediate->at(i+3) << 8);
-            uint16_t tags = intermediate->at(i+4) + ((uint16_t) intermediate->at(i+5) << 8);
-            uint16_t tags_known = intermediate->at(i+6) + ((uint16_t) intermediate->at(i+7) << 8);
+            llcMissType type = (llcMissType) intermediate.at(i);
+            uint16_t size = intermediate.at(i+2) + ((uint16_t) intermediate.at(i+3) << 8);
+            uint16_t tags = intermediate.at(i+4) + ((uint16_t) intermediate.at(i+5) << 8);
+            uint16_t tags_known = intermediate.at(i+6) + ((uint16_t) intermediate.at(i+7) << 8);
 
             // reverse the tags_unknown bits; make LSB the left-most bit
             uint16_t temp = 0;
@@ -100,7 +100,7 @@ public:
 
             uint64_t addr = 0;
             for (int j = 0; j < 8; ++j) {
-                addr += ((uint64_t) intermediate->at(i+8+j)) << (8*j);
+                addr += ((uint64_t) intermediate.at(i+8+j)) << (8*j);
             }
             addr -= QEMU_BASE_ADDRESS;
 
