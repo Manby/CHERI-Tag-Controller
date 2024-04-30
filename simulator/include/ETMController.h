@@ -50,7 +50,7 @@ public:
 
                     no_leaves_set = isClear(leaf_line);
 
-                    cache.set(TAG_CACHE_LINE_SIZE*(8*rl+8*rb+rt) + ROOT_TABLE_SIZE, leaf_line);     // insert the leaf line into the cache
+                    memory.set(TAG_CACHE_LINE_SIZE*(8*rl+8*rb+rt) + ROOT_TABLE_SIZE, leaf_line);     // insert the leaf line into the cache
 
                     root_byte |= no_leaves_set ? 0 : 1;
                 }
@@ -58,7 +58,7 @@ public:
                 root_line[rb] = root_byte;      // push the root byte into the line
             }
 
-            cache.set(rl, root_line);     // insert the root line into the cache
+            memory.set(rl, root_line);     // insert the root line into the cache
         }
     };
 
@@ -73,7 +73,7 @@ public:
                 result = translateToRootAddr(ax.addr);
                 root_base_addr = result.first;
                 root_cacheline_index = result.second;
-                root_line = cache.doRead(root_base_addr);
+                root_line = memory.doRead(root_base_addr);
 
                 root_tag = getTag(root_line, root_cacheline_index);
                 // TODO: Check that the above line isn't doing it backwards!
@@ -87,7 +87,7 @@ public:
                 result = translateToLeafAddr(ax.addr);
                 leaf_base_addr = result.first;
                 leaf_cacheline_index = result.second;
-                leaf_line = cache.doRead(leaf_base_addr);
+                leaf_line = memory.doRead(leaf_base_addr);
 
                 return getTags(leaf_line, leaf_cacheline_index);
 
@@ -114,7 +114,7 @@ public:
                     result = translateToRootAddr(ax.addr);
                     root_base_addr = result.first;
                     root_cacheline_index = result.second;
-                    root_line = cache.doRead(root_base_addr);
+                    root_line = memory.doRead(root_base_addr);
 
                     root_tag = getTag(root_line, root_cacheline_index);
 
@@ -124,20 +124,20 @@ public:
                     if (!root_tag) {
                         DBG cout << "Setting the root (it was cleared)" << endl;
                         modifyTag(root_line, root_cacheline_index, 1);
-                        cache.doWrite(root_base_addr, root_line);
+                        memory.doWrite(root_base_addr, root_line);
 
                         leaf_line = Cacheline{};    // a fully-zero cacheline
                     } else {
-                        leaf_line = cache.doRead(leaf_base_addr);
+                        leaf_line = memory.doRead(leaf_base_addr);
                     }
                     modifyTags(leaf_line, leaf_cacheline_index, ax.tags);
-                    cache.doWrite(leaf_base_addr, leaf_line);
+                    memory.doWrite(leaf_base_addr, leaf_line);
 
                 } else {
                     result = translateToRootAddr(ax.addr);
                     root_base_addr = result.first;
                     root_cacheline_index = result.second;
-                    root_line = cache.doRead(root_base_addr);
+                    root_line = memory.doRead(root_base_addr);
 
                     root_tag = getTag(root_line, root_cacheline_index);
 
@@ -148,22 +148,22 @@ public:
                     result = translateToLeafAddr(ax.addr);
                     leaf_base_addr = result.first;
                     leaf_cacheline_index = result.second;
-                    leaf_line = cache.doRead(leaf_base_addr);
+                    leaf_line = memory.doRead(leaf_base_addr);
 
                     modifyTags(leaf_line, leaf_cacheline_index, ax.tags);
 
                     if (!isClear(leaf_line)) {
-                        cache.doWrite(leaf_base_addr, leaf_line);
+                        memory.doWrite(leaf_base_addr, leaf_line);
                         return;
                     }
 
                     result = translateToRootAddr(ax.addr);
                     root_base_addr = result.first;
                     root_cacheline_index = result.second;
-                    root_line = cache.doRead(root_base_addr);
+                    root_line = memory.doRead(root_base_addr);
 
                     modifyTag(root_line, root_cacheline_index, 0);
-                    cache.doWrite(root_base_addr, root_line);
+                    memory.doWrite(root_base_addr, root_line);
                 }
         }
     }

@@ -13,7 +13,6 @@ using namespace std;
 
 constexpr int BASE = 0x100000;
 
-// TODO: cite?
 // https://github.com/ChampSim/ChampSim/blob/b44625f3a2d4517b0bf80297f8819c797a966fe7/inc/trace_instruction.h#L35
 constexpr size_t NUM_INSTR_DESTINATIONS = 2;
 constexpr size_t NUM_INSTR_SOURCES = 4;
@@ -41,11 +40,7 @@ struct champsimInstr {
     }
 };
 
-class Cache {
-
-/* TODO: Should this class be inside Controller?
- * This way, I think we can have it so only the Controller class can access Cache's methods, which is nice hiding.
- */
+class Memory {
 private:
     map<uint64_t, Cacheline> data;
     gzFile trace;
@@ -76,7 +71,7 @@ private:
     }
 
 public:
-    explicit Cache(gzFile output_trace, ofstream &output_log) : data(), trace(output_trace), log(std::move(output_log)), i(BASE), prevLogged() {
+    explicit Memory(gzFile output_trace, ofstream &output_log) : data(), trace(output_trace), log(std::move(output_log)), i(BASE), prevLogged() {
         //cout << sizeof(champsimInstr) << endl;
     }
 
@@ -118,7 +113,7 @@ public:
         return line;
     }
 
-    void dump() {
+    void dump_table() {
         cout << "DUMP: " << i-BASE << endl;
         Cacheline line;
         for (auto & it : data) {        // do one cacheline line at a time

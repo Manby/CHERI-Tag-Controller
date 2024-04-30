@@ -26,7 +26,7 @@ public:
 
                 if (log_points.find(i) != log_points.end()) {
                     cout << "LOG @ " << i << endl;
-                    controller.dump_cache();
+                    controller.dump_table();
                 }
 
                 ++i;

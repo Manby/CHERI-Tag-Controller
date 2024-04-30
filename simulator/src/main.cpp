@@ -36,7 +36,6 @@ int main(int argc, char *argv[]) {
         return 3;
     }
 
-    cout << "Decoding trace file" << endl;
     Decoder decoder = Decoder(initial_accesses, trace);
 
     size_t n;

@@ -25,16 +25,16 @@ protected:
 
 public:
     void setup(Decoder &decoder) override {
-        Cacheline leaf_line;
+        Cacheline line;
 
-        for (uint64_t rl = 0; rl < ROOT_TABLE_SIZE; rl += TAG_CACHE_LINE_SIZE) {        // do one root cacheline line at a time
-            for (int rb = 0; rb < TAG_CACHE_LINE_SIZE; ++rb) {                          // each root cacheline contains TAG_CACHE_LINE_SIZE bytes
+        for (uint64_t rl = 0; rl < ROOT_TABLE_SIZE; rl += TAG_CACHE_LINE_SIZE) {        // do one cacheline of tags at a time
+            for (int rb = 0; rb < TAG_CACHE_LINE_SIZE; ++rb) {                          // each cacheline contains TAG_CACHE_LINE_SIZE bytes
                 for (int rt = 0; rt < 8; ++rt) {                                        // each byte contains 8 tags
 
-                    // focus on this single root tag
-                    decoder.getInitialTags((8*rl+8*rb+rt)*TAG_CACHE_LINE_SIZE*8, TAG_CACHE_LINE_SIZE*8, leaf_line);
+                    // focus on this single tag
+                    decoder.getInitialTags((8*rl+8*rb+rt)*TAG_CACHE_LINE_SIZE*8, TAG_CACHE_LINE_SIZE*8, line);
 
-                    cache.set(TAG_CACHE_LINE_SIZE*(8*rl+8*rb+rt), leaf_line);     // insert the leaf line into the cache
+                    memory.set(TAG_CACHE_LINE_SIZE*(8*rl+8*rb+rt), line);     // insert the line into the cache
                 }
             }
         }

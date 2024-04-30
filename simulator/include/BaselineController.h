@@ -25,7 +25,7 @@ public:
                 result = translateToTagAddr(ax.addr);
                 leaf_base_addr = result.first;
                 leaf_cacheline_index = result.second;
-                leaf_line = cache.doRead(leaf_base_addr);
+                leaf_line = memory.doRead(leaf_base_addr);
                 return getTags(leaf_line, leaf_cacheline_index);
 
             case ACCESS_TYPE_WRITE:
@@ -50,9 +50,9 @@ public:
                 leaf_base_addr = result.first;
                 leaf_cacheline_index = result.second;
 
-                leaf_line = cache.doRead(leaf_base_addr);
+                leaf_line = memory.doRead(leaf_base_addr);
                 modifyTags(leaf_line, leaf_cacheline_index, ax.tags);
-                cache.doWrite(leaf_base_addr, leaf_line);
+                memory.doWrite(leaf_base_addr, leaf_line);
         }
     }
 };

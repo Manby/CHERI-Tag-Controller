@@ -39,6 +39,8 @@ int verify(Decoder &decoder, Controller &controller, size_t n) {
         }
     }
 
+    cout << "VERIFY: " << discrepancies << " total discrepancies" << endl;
+
     return discrepancies;
 }
 
@@ -89,7 +91,6 @@ int main(int argc, char *argv[]) {
         return 3;
     }
 
-    cout << "Decoding trace file" << endl;
     Decoder decoder = Decoder(initial_accesses, trace);
 
     size_t n;
@@ -199,6 +200,7 @@ int main(int argc, char *argv[]) {
         BaselineController controller(output_trace, output_log);
         controller.setup(decoder);
 
+        cout << "Beginning verification" << endl;
         verify(decoder, controller, n);
     }
 
