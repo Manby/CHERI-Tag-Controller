@@ -60,7 +60,10 @@ def getControllerStats(controllerSimOut):
             if "DRAM" in line: continue
 
             parts = [x for x in line.split(" ") if x != ""]
-            stats[parts[1].lower()] = int(parts[3])
+            if "AVG" in line:
+                stats[parts[1].lower()] = float(parts[3])
+            else:
+                stats[parts[1].lower()] = int(parts[3])
 
     return stats
 

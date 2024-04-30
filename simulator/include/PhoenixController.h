@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <unordered_set>
+#include <unordered_map>
 #include <algorithm>
 #include <vector>
 #include "Controller.h"
@@ -21,7 +22,7 @@ protected:
     vector<uint16_t> tag_working_set;    // set of blocks in the current tag working set; ordered by LRU policy, with LRU at the front
     unordered_set<uint16_t> allocated;          // set of blocks that currently have an allocated portion of DRAM
     uint16_t twsSize;                           // maximum size of the tag working set
-    vector<uint16_t> dramUsage;
+    unordered_map<uint16_t, int> dramUsage;
     int allocCount, freeCount;
 
     static std::pair<uint64_t, uint16_t> translateToLeafAddr(uint64_t addr_base) {  // converts the base address of a data cacheline to that of the corresponding tag cacheline, and the bit-index into the cacheline where the tags begin
@@ -97,6 +98,16 @@ protected:
         freeCount++;
     }
 
+    void updateDramUsage() {
+        uint16_t size = allocated.size();
+
+        if (dramUsage.find(size) == dramUsage.end()) {
+            dramUsage[size] = 1;
+        } else {
+            dramUsage[size]++;
+        }
+    }
+
 
 public:
     PhoenixController(gzFile output_trace, ofstream &output_log, int twsSize) : Controller(output_trace, output_log), tag_working_set(), allocated(), twsSize(twsSize), dramUsage(), allocCount(0), freeCount(0) {}
@@ -141,7 +152,7 @@ public:
         }
         memory.set(0, superroot_line);
 
-        dramUsage.push_back(allocated.size());
+        updateDramUsage();
     };
 
     uint16_t handleRead(memAccess ax) override {
@@ -195,7 +206,7 @@ public:
                 assert(false);  // wrong call was made!
         }
 
-        dramUsage.push_back(allocated.size());
+        updateDramUsage();
         return tags;
     }
 
@@ -317,22 +328,23 @@ public:
                 }
         }
 
-        dramUsage.push_back(allocated.size());
+        updateDramUsage();
     }
 
     void reportStats() override {
-        uint64_t tot = 0;
+        uint64_t tot = 0, count = 0;
         uint16_t v;
         uint16_t max = 0;
         uint16_t min = 0xffff;   // MAX 16 BIT INT
 
-        for (uint16_t & it : dramUsage) {
-            v = it;
+        for (auto & it : dramUsage) {
+            v = it.first;
             if (v > max) max = v;
             if (v < min) min = v;
-            tot += v;
+            count += it.second;
+            tot += v * it.second;
         }
-        float avg = ((float) tot) / ((float) dramUsage.size());
+        float avg = ((float) tot) / ((float) count);
 
         cout << "REPORT: === DRAM USAGE ===" << endl;
         cout << "REPORT: MAX BLOCKS:  " << max << endl;
