@@ -18,6 +18,9 @@ def doRun(scheme, initial_state, llc_requests, n, warmup):
     print('\n')
 
 
+    controllerStats = getControllerStats(controllerSimOut)
+    if (controllerStats): controllerStats = {'blocks': controllerStats}
+
     num_accesses = getNumAccesses(controllerSimOut)
 
     num_warmup = round(warmup * int(num_accesses))
@@ -29,9 +32,11 @@ def doRun(scheme, initial_state, llc_requests, n, warmup):
                           "out/output_trace.gz")
     print('\n')
 
-    stats = getStats(champsimOut)
+    champsimStats = getChampsimStats(champsimOut)
 
-    return stats
+    controllerStats.update(champsimStats)
+
+    return controllerStats
 
 print("~~~~~ Configuring ChampSim ~~~~~\n")
 champsimConfig(64, 12, None)

@@ -18,10 +18,10 @@ constexpr uint64_t SUPERROOT_TABLE_SIZE = ROOT_TABLE_SIZE >> 9;
 
 class PhoenixController : public Controller {
 protected:
-    vector<int> tag_working_set;    // set of blocks in the current tag working set; ordered by LRU policy, with LRU at the front
-    unordered_set<int> allocated;          // set of blocks that currently have an allocated portion of DRAM
-    int twsSize;                           // maximum size of the tag working set
-    vector<int> dramUsage;
+    vector<uint16_t> tag_working_set;    // set of blocks in the current tag working set; ordered by LRU policy, with LRU at the front
+    unordered_set<uint16_t> allocated;          // set of blocks that currently have an allocated portion of DRAM
+    uint16_t twsSize;                           // maximum size of the tag working set
+    vector<uint16_t> dramUsage;
     int allocCount, freeCount;
 
     static std::pair<uint64_t, uint16_t> translateToLeafAddr(uint64_t addr_base) {  // converts the base address of a data cacheline to that of the corresponding tag cacheline, and the bit-index into the cacheline where the tags begin
@@ -54,22 +54,22 @@ protected:
         return {superroot_base, superroot_offset};
     }
 
-    int blockIndex(uint64_t addr) {
+    uint16_t blockIndex(uint64_t addr) {
         return (addr / 65536) >> 6;     // leaves only the top 9 bits of the addr (so its in the range [0,512))
     }
 
-    bool isInTWS(int index) {
+    bool isInTWS(uint16_t index) {
         return find(tag_working_set.begin(), tag_working_set.end(), index) != tag_working_set.end();
     }
 
-    void promote(int index) {
+    void promote(uint16_t index) {
         auto it = find(tag_working_set.begin(), tag_working_set.end(), index);
         assert(it != tag_working_set.end());
         tag_working_set.erase(it);
         tag_working_set.push_back(index);
     }
 
-    int updateTWS(int index) {           // returns the index of the evicted block
+    uint16_t updateTWS(uint16_t index) {           // returns the index of the evicted block
         if (isInTWS(index)) {
             promote(index);
             return -1;
@@ -79,7 +79,7 @@ protected:
 
         if (tag_working_set.size() == twsSize) {
             auto it = tag_working_set.begin();
-            int evicted = *it;
+            uint16_t evicted = *it;
             tag_working_set.erase(it);     // evict LRU
             return evicted;
         }
@@ -87,12 +87,12 @@ protected:
         return -1;
     }
 
-    void DRAMAllocate(int index) {
+    void DRAMAllocate(uint16_t index) {
         allocated.insert(index);
         allocCount++;
     }
 
-    void DRAMFree(int index) {
+    void DRAMFree(uint16_t index) {
         allocated.erase(index);
         freeCount++;
     }
@@ -105,7 +105,7 @@ public:
         Cacheline superroot_line, root_line, leaf_line;
         uint8_t superroot_byte, root_byte;
         bool no_leaves_set;
-        int index = 0;      // block index
+        uint16_t index = 0;      // block index
 
         superroot_byte = 0;
         for (uint64_t rl = 0; rl < ROOT_TABLE_SIZE; rl += TAG_CACHE_LINE_SIZE) {        // do one root cacheline line at a time
@@ -150,7 +150,7 @@ public:
         pair<uint64_t, uint16_t> result;
         bool superroot_tag, root_tag;
         uint16_t tags;
-        int index = blockIndex(ax.addr);
+        uint16_t index = blockIndex(ax.addr);
 
         switch (ax.type) {
             case ACCESS_TYPE_READ:
@@ -204,7 +204,7 @@ public:
         Cacheline superroot_line, root_line, leaf_line;
         pair<uint64_t, uint16_t> result;
         bool superroot_tag, root_tag;
-        int index = blockIndex(ax.addr);
+        uint16_t index = blockIndex(ax.addr);
 
         switch (ax.type) {
             case ACCESS_TYPE_READ:
@@ -322,23 +322,23 @@ public:
 
     void reportStats() override {
         uint64_t tot = 0;
-        int v;
-        int max = 0;
-        int min = 2147483647;   // MAXINT
+        uint16_t v;
+        uint16_t max = 0;
+        uint16_t min = 0xffff;   // MAX 16 BIT INT
 
-        for (auto it = dramUsage.begin(); it != dramUsage.end(); it++) {
-            v = *it;
+        for (uint16_t & it : dramUsage) {
+            v = it;
             if (v > max) max = v;
             if (v < min) min = v;
             tot += v;
         }
         float avg = ((float) tot) / ((float) dramUsage.size());
 
-        cout << "=== DRAM USAGE ===" << endl;
-        cout << "MAX BLOCKS:  " << max << endl;
-        cout << "MIN BLOCKS:  " << min << endl;
-        cout << "AVG BLOCKS:  " << avg << endl;
-        cout << "ALLOC COUNT: " << allocCount << endl;
-        cout << "FREE  COUNT: " << freeCount << endl;
+        cout << "REPORT: === DRAM USAGE ===" << endl;
+        cout << "REPORT: MAX BLOCKS:  " << max << endl;
+        cout << "REPORT: MIN BLOCKS:  " << min << endl;
+        cout << "REPORT: AVG BLOCKS:  " << avg << endl;
+        cout << "REPORT: ALLOC COUNT: " << allocCount << endl;
+        cout << "REPORT: FREE  COUNT: " << freeCount << endl;
     }
 };

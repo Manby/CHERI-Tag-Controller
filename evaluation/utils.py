@@ -53,7 +53,18 @@ def getNumAccesses(controllerSimOut):
 
     return num_accesses
 
-def getStats(champsimOut):
+def getControllerStats(controllerSimOut):
+    stats = {}
+    for line in controllerSimOut.split('\n'):
+        if "REPORT" in line:
+            if "DRAM" in line: continue
+
+            parts = [x for x in line.split(" ") if x != ""]
+            stats[parts[1].lower()] = int(parts[3])
+
+    return stats
+
+def getChampsimStats(champsimOut):
     stats = {}
     for line in champsimOut.split('\n'):
         if "cpu0_L1D" in line:
