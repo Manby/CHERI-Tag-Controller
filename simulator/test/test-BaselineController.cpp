@@ -38,6 +38,9 @@ TEST(BaselineControllerTest, AddressMapping) {
     checkAddrMapping(controller, ACCESS_TYPE_READ, 0b100000000000000, 128);
 
     checkAddrMapping(controller, ACCESS_TYPE_READ, 0xabcdcaf, 0xabcc0*2);
+
+    gzclose(trace);
+    gzclose(output_trace);
 }
 
 /*

@@ -202,5 +202,8 @@ int main(int argc, char *argv[]) {
         verify(decoder, controller, n);
     }
 
+    gzclose(trace);
+    gzclose(output_trace);
+
     return 0;
 }

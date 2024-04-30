@@ -25,6 +25,9 @@ TEST(MorelloControllerZeroTest, ReadAccessSequence) {
     controller.handleRead(ax2);
     logged = controller.getPrevLogged();
     EXPECT_EQ(logged.size(), 1);
+
+    gzclose(trace);
+    gzclose(output_trace);
 }
 
 /*

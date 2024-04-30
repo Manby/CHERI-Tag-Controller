@@ -110,5 +110,8 @@ int main(int argc, char *argv[]) {
 
     cout << "Processed " << count << " entries" << endl;
 
+    gzclose(trace);
+    gzclose(output_trace);
+
     return 0;
 }

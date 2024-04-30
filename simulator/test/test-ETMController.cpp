@@ -46,6 +46,9 @@ TEST(ETMControllerTest, AddressMappingAndReadAccessSequence) {
 
     result = checkAddrMapping(controller, ACCESS_TYPE_READ, 0xabcdc00);
     EXPECT_EQ(result, 0b101010000000);
+
+    gzclose(trace);
+    gzclose(output_trace);
 }
 
 TEST(ETMControllerTest, WriteAccessSequence) {
