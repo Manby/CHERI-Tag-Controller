@@ -20,12 +20,12 @@ if parsed_args.morello == "yes":
     cache_params_t = [
             (128, 4, 'ip_stride'),
             (128, 4, 'next_line'),
-            (128, 4, 'spp_dev')
+            (128, 4, 'va_ampm_lite')
             ]
     cache_params_z = [
             (128, 4, 'ip_stride'),
             (128, 4, 'next_line'),
-            (128, 4, 'spp_dev')
+            (128, 4, 'va_ampm_lite')
             ]
 
 else:
@@ -34,7 +34,7 @@ else:
     cache_params = [
             (128, 4, 'ip_stride'),
             (128, 4, 'next_line'),
-            (128, 4, 'spp_dev')
+            (128, 4, 'va_ampm_lite')
             ]
 
 for workload in workloads:
