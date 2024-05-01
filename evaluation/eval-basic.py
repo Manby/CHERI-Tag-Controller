@@ -9,7 +9,7 @@ parser.add_argument('-w', dest='warmup', type=str, required=False, default="0.1"
 
 parsed_args = parser.parse_args()
 
-workloads = getWorkloads(workload_list)
+workloads = getWorkloads(parsed_args.workload_list)
 
 print("~~~~~ Configuring ChampSim ~~~~~\n")
 champsimConfig(, None)
@@ -27,7 +27,8 @@ for workload in workloads:
     for scheme in schemes:
         print("##########  EMULATING SCHEME: " + scheme + "  ##########")
         curr_workload_stats[scheme] = doRun(scheme, initial_state, llc_requests,
-                                            int(n), float(warmup))
+                                            int(parsed_args.n),
+                                            float(parsed_args.warmup))
 
     stats[workload[0]] = curr_workload_stats
 
