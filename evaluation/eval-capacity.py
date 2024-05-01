@@ -95,4 +95,4 @@ for workload in workloads:
 
 print(stats)
 
-save(stats, "saves/stats-"+getTimestamp()+".json")
+save(stats, "saves/eval-capacity-"+getTimestamp()+".json")

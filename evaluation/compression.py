@@ -2,14 +2,6 @@ import argparse
 import os
 from utils import *
 
-parser = argparse.ArgumentParser(description='Run a tag controller simulation and see how compressible the tag table is.')
-parser.add_argument('-i', dest='initial_state', type=str, required=True)
-parser.add_argument('-l', dest='llc_requests', type=str, required=True)
-parser.add_argument('-n', dest='n', type=str, required=True)
-parser.add_argument('-d', dest='divisions', type=str, required=False, default="10")
-
-parsed_args = parser.parse_args()
-
 def gzipAll(paths):
     compressed_sizes = []
     for p in paths:
@@ -73,12 +65,22 @@ def doRun(scheme, initial_state, llc_requests, n, divisions):
 
     return original_size, compressed_sizes
 
-sizes = {}
-for scheme in ["baseline"]:#, "etm", "morello-t", "morello-z"]:
-    print("##########  EMULATING SCHEME: " + scheme + "  ##########")
-    sizes[scheme] = doRun(scheme, parsed_args.initial_state, parsed_args.llc_requests,
-          int(parsed_args.n), int(parsed_args.divisions))
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Run a tag controller simulation and see how compressible the tag table is.')
+    parser.add_argument('-i', dest='initial_state', type=str, required=True)
+    parser.add_argument('-l', dest='llc_requests', type=str, required=True)
+    parser.add_argument('-n', dest='n', type=str, required=True)
+    parser.add_argument('-d', dest='divisions', type=str, required=False, default="10")
 
-print(sizes)
+    parsed_args = parser.parse_args()
 
-save(sizes, "saves/sizes-"+getTimestamp()+".json")
+
+    sizes = {}
+    for scheme in ["baseline"]:#, "etm", "morello-t", "morello-z"]:
+        print("##########  EMULATING SCHEME: " + scheme + "  ##########")
+        sizes[scheme] = doRun(scheme, parsed_args.initial_state, parsed_args.llc_requests,
+              int(parsed_args.n), int(parsed_args.divisions))
+
+    print(sizes)
+
+    save(sizes, "saves/sizes-"+getTimestamp()+".json")
