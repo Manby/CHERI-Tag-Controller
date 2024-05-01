@@ -71,7 +71,7 @@ for workload in workloads:
                                                 int(parsed_args.n),
                                                 float(parsed_args.warmup))
 
-            curr_workload_stats[(params_t, params_z)] = curr_params_stats
+            curr_workload_stats[str((params_t, params_z))] = curr_params_stats
 
         stats[workload[0]] = curr_workload_stats
 
@@ -89,7 +89,7 @@ for workload in workloads:
                                                     int(parsed_args.n),
                                                     float(parsed_args.warmup))
 
-            curr_workload_stats[params] = curr_params_stats
+            curr_workload_stats[str(params)] = curr_params_stats
 
         stats[workload[0]] = curr_workload_stats
 
