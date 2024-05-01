@@ -12,7 +12,7 @@ parsed_args = parser.parse_args()
 workloads = getWorkloads(parsed_args.workload_list)
 
 print("~~~~~ Configuring ChampSim ~~~~~\n")
-champsimConfig(32, 4, None)
+champsimConfig(128, 4, None)        # 4-way 32KiB Cache
 print("\n\n")
 
 stats = {}
