@@ -1,7 +1,7 @@
 cd simulator &&
 bash ./build-and-run.sh
 
-cd ../ &&
+cd ../../ &&
 mkdir ChampSim-instrumented &&
 cd ChampSim-instrumented &&
 git clone git@github.com:ChampSim/ChampSim.git &&
