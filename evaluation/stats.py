@@ -2,7 +2,7 @@ import argparse
 from utils import *
 
 
-def doRun(scheme, initial_state, llc_requests, n, warmup):
+def doRun(scheme, initial_state, llc_requests, n, warmup, skipChampsim=False):
     print("\n===== Running tag controller simulator =====\n")
     controllerSimOut = runControllerSimulator(scheme, initial_state,
                                               llc_requests, "out/output_trace.gz",
@@ -19,15 +19,16 @@ def doRun(scheme, initial_state, llc_requests, n, warmup):
     num_warmup = round(warmup * int(num_accesses))
     num_simulation = int(num_accesses) - num_warmup
 
-    print("\n===== Running ChampSim =====\n")
-    champsimOut = runChampsim("--warmup-instructions", str(num_warmup),
-                          "--simulation-instructions", str(num_simulation),
-                          "out/output_trace.gz")
-    print('\n')
+    if not skipChampsim:
+        print("\n===== Running ChampSim =====\n")
+        champsimOut = runChampsim("--warmup-instructions", str(num_warmup),
+                              "--simulation-instructions", str(num_simulation),
+                              "out/output_trace.gz")
+        print('\n')
 
-    champsimStats = getChampsimStats(champsimOut)
+        champsimStats = getChampsimStats(champsimOut)
 
-    controllerStats.update(champsimStats)
+        controllerStats.update(champsimStats)
 
     return controllerStats
 

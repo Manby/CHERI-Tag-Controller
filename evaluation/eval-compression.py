@@ -6,7 +6,7 @@ from stats import doRun as doRunStats
 parser = argparse.ArgumentParser()
 parser.add_argument('-l', dest='workload_list', type=str, required=True)
 parser.add_argument('-n', dest='n', type=str, required=True)
-parser.add_argument('-w', dest='warmup', type=str, required=False, default="0.1")
+parser.add_argument('-d', dest='divisions', type=str, required=False, default="10")
 
 parsed_args = parser.parse_args()
 
@@ -31,12 +31,12 @@ for workload in workloads:
         if scheme == "baseline":
             curr_workload_stats[scheme] = doRunCompression(scheme, initial_state, llc_requests,
                                                 int(parsed_args.n),
-                                                float(parsed_args.warmup))
+                                                float(parsed_args.divisions))
 
         else:
             curr_workload_stats[scheme] = doRunStats(scheme, initial_state, llc_requests,
                                                 int(parsed_args.n),
-                                                float(parsed_args.warmup))
+                                                int(parsed_args.warmup), True)
 
     stats[workload[0]] = curr_workload_stats
 
