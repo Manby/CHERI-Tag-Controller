@@ -31,12 +31,12 @@ for workload in workloads:
         if scheme == "baseline":
             curr_workload_stats[scheme] = doRunCompression(scheme, initial_state, llc_requests,
                                                 int(parsed_args.n),
-                                                float(parsed_args.divisions))
+                                                int(parsed_args.divisions))
 
         else:
             curr_workload_stats[scheme] = doRunStats(scheme, initial_state, llc_requests,
                                                 int(parsed_args.n),
-                                                int(parsed_args.warmup), True)
+                                                float(parsed_args.warmup), True)
 
     stats[workload[0]] = curr_workload_stats
 
