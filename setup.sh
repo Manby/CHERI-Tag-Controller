@@ -1,3 +1,6 @@
+cd simulator &&
+bash ./build-and-run.sh
+
 cd ../ &&
 mkdir ChampSim-instrumented &&
 cd ChampSim-instrumented &&
