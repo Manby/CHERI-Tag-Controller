@@ -1,14 +1,6 @@
 import argparse
 from utils import *
 
-parser = argparse.ArgumentParser(description='Run a simulation and gather the metrics.')
-parser.add_argument('-i', dest='initial_state', type=str, required=True)
-parser.add_argument('-l', dest='llc_requests', type=str, required=True)
-parser.add_argument('-n', dest='n', type=str, required=True)
-parser.add_argument('-w', dest='warmup', type=str, required=False, default="0.1")
-
-parsed_args = parser.parse_args()
-
 
 def doRun(scheme, initial_state, llc_requests, n, warmup):
     print("\n===== Running tag controller simulator =====\n")
@@ -39,20 +31,30 @@ def doRun(scheme, initial_state, llc_requests, n, warmup):
 
     return controllerStats
 
-print("~~~~~ Configuring ChampSim ~~~~~\n")
-champsimConfig(64, 12, None)
-print()
 
-stats = {}
-#schemes = ["baseline", "etm", "morello-t", "morello-z"]
-#schemes = ["baseline", "etm", "phoenix"]
-#schemes = ["phoenix-8t", "phoenix-8f", "phoenix-4t", "phoenix-4f", "phoenix-2t", "phoenix-2f"]
-schemes = ["baseline", "etm", "morello-t", "morello-z", "phoenix-8t", "phoenix-8f", "phoenix-4t", "phoenix-4f"]
-for scheme in schemes:
-    print("##########  EMULATING SCHEME: " + scheme + "  ##########")
-    stats[scheme] = doRun(scheme, parsed_args.initial_state, parsed_args.llc_requests,
-          int(parsed_args.n), float(parsed_args.warmup))
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Run a simulation and gather the metrics.')
+    parser.add_argument('-i', dest='initial_state', type=str, required=True)
+    parser.add_argument('-l', dest='llc_requests', type=str, required=True)
+    parser.add_argument('-n', dest='n', type=str, required=True)
+    parser.add_argument('-w', dest='warmup', type=str, required=False, default="0.1")
 
-print(stats)
+    parsed_args = parser.parse_args()
 
-save(stats, "saves/stats-"+getTimestamp()+".json")
+    print("~~~~~ Configuring ChampSim ~~~~~\n")
+    champsimConfig(64, 12, None)
+    print()
+
+    stats = {}
+    #schemes = ["baseline", "etm", "morello-t", "morello-z"]
+    #schemes = ["baseline", "etm", "phoenix"]
+    #schemes = ["phoenix-8t", "phoenix-8f", "phoenix-4t", "phoenix-4f", "phoenix-2t", "phoenix-2f"]
+    schemes = ["baseline", "etm", "morello-t", "morello-z", "phoenix-8t", "phoenix-8f", "phoenix-4t", "phoenix-4f"]
+    for scheme in schemes:
+        print("##########  EMULATING SCHEME: " + scheme + "  ##########")
+        stats[scheme] = doRun(scheme, parsed_args.initial_state, parsed_args.llc_requests,
+              int(parsed_args.n), float(parsed_args.warmup))
+
+    print(stats)
+
+    save(stats, "saves/stats-"+getTimestamp()+".json")

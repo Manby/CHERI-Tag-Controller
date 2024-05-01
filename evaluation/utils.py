@@ -6,6 +6,13 @@ from datetime import datetime
 
 PATH = "../.."
 
+def getWorkloads(workload_list):
+    workloads = []
+    with open(workload_list) as f:
+        lines = f.read.split("\n")
+        if line: workloads.append(lines.split())
+    return workloads
+
 def runControllerSimulator(*args):
     outputList = []
     controller_simulator = threading.Thread(target=runControllerSimulatorInner,
