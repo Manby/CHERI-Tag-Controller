@@ -18,7 +18,7 @@ if parsed_args.morello == "yes":
     schemes = ["morello-t", "morello-z"]
 
     print("~~~~~ Configuring ChampSim ~~~~~\n")
-    champsimConfig(128, 4, None)        # 4-way 32KiB Cache
+    champsimConfig(64, 4, None)        # 4-way 16KiB Cache
     print("\n\n")
 
 else:
@@ -38,7 +38,7 @@ for workload in workloads:
         if scheme == "morello-z":
             # update the cache parameters
             print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
-            champsimConfig(128, 4, None)        # 4-way 32KiB Cache
+            champsimConfig(64, 4, None)        # 4-way 16KiB Cache
             print("\n\n")
 
         print("##########  EMULATING SCHEME: " + scheme + "  ##########")
