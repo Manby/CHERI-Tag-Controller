@@ -46,7 +46,8 @@ print()
 stats = {}
 #schemes = ["baseline", "etm", "morello-t", "morello-z"]
 #schemes = ["baseline", "etm", "phoenix"]
-schemes = ["phoenix-8t", "phoenix-8f", "phoenix-4t", "phoenix-4f", "phoenix-2t", "phoenix-2f"]
+#schemes = ["phoenix-8t", "phoenix-8f", "phoenix-4t", "phoenix-4f", "phoenix-2t", "phoenix-2f"]
+schemes = ["baseline", "etm", "morello-t", "morello-z", "phoenix-8t", "phoenix-8f", "phoenix-4t", "phoenix-4f"]
 for scheme in schemes:
     print("##########  EMULATING SCHEME: " + scheme + "  ##########")
     stats[scheme] = doRun(scheme, parsed_args.initial_state, parsed_args.llc_requests,
