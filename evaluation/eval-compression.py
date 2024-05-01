@@ -35,8 +35,7 @@ for workload in workloads:
 
         else:
             curr_workload_stats[scheme] = doRunStats(scheme, initial_state, llc_requests,
-                                                int(parsed_args.n),
-                                                float(parsed_args.warmup), True)
+                                                int(parsed_args.n), 0, True)
 
     stats[workload[0]] = curr_workload_stats
 
