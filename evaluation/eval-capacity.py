@@ -51,7 +51,7 @@ for workload in workloads:
             # first do tag cache
             # update the cache parameters
             print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
-            champsimConfig(params_t*)
+            champsimConfig(*params_t)
             print("\n\n")
 
             scheme = "morello-t"
@@ -63,7 +63,7 @@ for workload in workloads:
             # next do zero cache
             # update the cache parameters
             print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
-            champsimConfig(params_z*)
+            champsimConfig(*params_z)
             print("\n\n")
             scheme = "morello-z"
             print("##########  EMULATING SCHEME: " + scheme + "  ##########")
@@ -80,7 +80,7 @@ for workload in workloads:
         for params in cache_params:
             # update the cache parameters
             print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
-            champsimConfig(params*)
+            champsimConfig(*params)
             print("\n\n")
 
             for scheme in schemes:
