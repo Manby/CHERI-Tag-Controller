@@ -31,8 +31,6 @@
 #include <fmt/core.h>
 #include <iostream>
 
-std::ofstream output_log();
-
 constexpr int DEADLOCK_CYCLE{500};
 
 auto start_time = std::chrono::steady_clock::now();
@@ -41,7 +39,7 @@ std::chrono::seconds elapsed_time() { return std::chrono::duration_cast<std::chr
 
 namespace champsim
 {
-phase_stats do_phase(phase_info phase, environment& env, std::vector<tracereader>& traces, std::vector<int>& logpoints, std::ofstream& output_file)
+phase_stats do_phase(phase_info phase, environment& env, std::vector<tracereader>& traces, std::vector<uint64_t>& logpoints, std::ofstream& output_file)
 {
   auto [phase_name, is_warmup, length, trace_index, trace_names] = phase;
   auto operables = env.operable_view();
@@ -123,7 +121,7 @@ phase_stats do_phase(phase_info phase, environment& env, std::vector<tracereader
 
     if (curr != logpoints.end()) {
         for (O3_CPU &cpu : env.cpu_view()) {	// there should only be one
-            while (cpu.num_retired >= (long unsigned int) *curr) {
+            while (cpu.num_retired >= *curr) {
                 printf("LOGGING %d\n", *curr);
                 for (CACHE &cache : env.cache_view()) {
                     //std::cout << cache.NAME << std::endl;
@@ -175,7 +173,7 @@ phase_stats do_phase(phase_info phase, environment& env, std::vector<tracereader
 }
 
 // simulation entry point
-std::vector<phase_stats> main(environment& env, std::vector<phase_info>& phases, std::vector<tracereader>& traces, std::vector<int>& logpoints, std::ofstream& output_file)
+std::vector<phase_stats> main(environment& env, std::vector<phase_info>& phases, std::vector<tracereader>& traces, std::vector<uint64_t>& logpoints, std::ofstream& output_file)
 {
   for (champsim::operable& op : env.operable_view())
     op.initialize();

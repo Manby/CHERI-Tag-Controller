@@ -32,7 +32,7 @@
 
 namespace champsim
 {
-std::vector<phase_stats> main(environment& env, std::vector<phase_info>& phases, std::vector<tracereader>& traces, std::vector<int>& logpoints, std::ofstream& output_file);
+std::vector<phase_stats> main(environment& env, std::vector<phase_info>& phases, std::vector<tracereader>& traces, std::vector<uint64_t>& logpoints, std::ofstream& output_file);
 }
 
 int main(int argc, char** argv)
@@ -46,7 +46,7 @@ int main(int argc, char** argv)
   uint64_t simulation_instructions = std::numeric_limits<uint64_t>::max();
   std::string json_file_name;
   std::vector<std::string> trace_names;
-  std::vector<int> logpoints;
+  std::vector<uint64_t> logpoints;
   std::string logfile;
 
   auto set_heartbeat_callback = [&](auto) {
