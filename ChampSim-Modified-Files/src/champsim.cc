@@ -122,7 +122,7 @@ phase_stats do_phase(phase_info phase, environment& env, std::vector<tracereader
     if (curr != logpoints.end()) {
         for (O3_CPU &cpu : env.cpu_view()) {	// there should only be one
             while (cpu.num_retired >= *curr) {
-                printf("LOGGING %d\n", *curr);
+                printf("LOGGING %ld\n", *curr);
                 for (CACHE &cache : env.cache_view()) {
                     //std::cout << cache.NAME << std::endl;
                     if (cache.NAME == "cpu0_L1D") {
