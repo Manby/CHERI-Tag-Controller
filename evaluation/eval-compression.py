@@ -13,6 +13,7 @@ parsed_args = parser.parse_args()
 workloads = getWorkloads(parsed_args.workload_list)
 
 stats = {}
+save_name = "saves/eval-compression-"+getTimestamp()+".json"
 
 schemes = ["baseline", "phoenix-8f", "phoenix-4t", "phoenix-4f"]
 
@@ -32,13 +33,14 @@ for workload in workloads:
             curr_workload_stats[scheme] = doRunCompression(scheme, initial_state, llc_requests,
                                                 int(parsed_args.n),
                                                 int(parsed_args.divisions))
+            stats[workload[0]] = curr_workload_stats
+            save(stats, save_name)
 
         else:
             curr_workload_stats[scheme] = doRunStats(scheme, initial_state, llc_requests,
                                                 int(parsed_args.n), 0, True)
 
-    stats[workload[0]] = curr_workload_stats
+            stats[workload[0]] = curr_workload_stats
+            save(stats, save_name)
 
 print(stats)
-
-save(stats, "saves/eval-compression-"+getTimestamp()+".json")

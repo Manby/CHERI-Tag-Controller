@@ -13,6 +13,7 @@ parsed_args = parser.parse_args()
 workloads = getWorkloads(parsed_args.workload_list)
 
 stats = {}
+save_name = "saves/eval-ways-"+getTimestamp()+".json"
 
 if parsed_args.morello == "yes":
     schemes = ["morello-t", "morello-z"]
@@ -46,8 +47,8 @@ for workload in workloads:
 
 
     if parsed_args.morello == "yes":
-        curr_params_stats = {}
         for params_t, params_z in zip(cache_params_t, cache_params_z):
+            curr_params_stats = {}
             # first do tag cache
             # update the cache parameters
             print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
@@ -60,6 +61,10 @@ for workload in workloads:
                                                 int(parsed_args.n),
                                                 float(parsed_args.warmup))
 
+            curr_workload_stats[str(params)] = curr_params_stats
+            stats[workload[0]] = curr_workload_stats
+            save(stats, save_name)
+
             # next do zero cache
             # update the cache parameters
             print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
@@ -71,13 +76,13 @@ for workload in workloads:
                                                 int(parsed_args.n),
                                                 float(parsed_args.warmup))
 
-            curr_workload_stats[str((params_t, params_z))] = curr_params_stats
-
-        stats[workload[0]] = curr_workload_stats
+            curr_workload_stats[str(params)] = curr_params_stats
+            stats[workload[0]] = curr_workload_stats
+            save(stats, save_name)
 
     else:
-        curr_params_stats = {}
         for params in cache_params:
+            curr_params_stats = {}
             # update the cache parameters
             print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
             champsimConfig(*params)
@@ -89,10 +94,8 @@ for workload in workloads:
                                                     int(parsed_args.n),
                                                     float(parsed_args.warmup))
 
-            curr_workload_stats[str(params)] = curr_params_stats
-
-        stats[workload[0]] = curr_workload_stats
+                curr_workload_stats[str(params)] = curr_params_stats
+                stats[workload[0]] = curr_workload_stats
+                save(stats, save_name)
 
 print(stats)
-
-save(stats, "saves/eval-ways-"+getTimestamp()+".json")

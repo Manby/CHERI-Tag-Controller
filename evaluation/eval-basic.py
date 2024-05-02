@@ -13,6 +13,7 @@ parsed_args = parser.parse_args()
 workloads = getWorkloads(parsed_args.workload_list)
 
 stats = {}
+save_name = "saves/eval-basic-"+getTimestamp()+".json"
 
 if parsed_args.morello == "yes":
     schemes = ["morello-t", "morello-z"]
@@ -46,8 +47,7 @@ for workload in workloads:
                                             int(parsed_args.n),
                                             float(parsed_args.warmup))
 
-    stats[workload[0]] = curr_workload_stats
+        stats[workload[0]] = curr_workload_stats
+        save(stats, save_name)
 
 print(stats)
-
-save(stats, "saves/eval-basic-"+getTimestamp()+".json")
