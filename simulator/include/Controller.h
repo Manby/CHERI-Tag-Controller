@@ -33,4 +33,6 @@ public:
     }
 
     virtual void reportStats() {}
+
+    virtual ~Controller() = default;
 };

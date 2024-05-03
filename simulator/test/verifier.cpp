@@ -44,7 +44,7 @@ int verify(Decoder &decoder, Controller &controller, size_t n) {
     return discrepancies;
 }
 
-int crossVerify(BaselineController &baselineController, Controller &controller) {
+int crossVerify(Controller &controller1, Controller &controller2) {
     memAccess ax;
     uint16_t baselineTags, tags;
     int discrepancies = 0;
@@ -54,8 +54,8 @@ int crossVerify(BaselineController &baselineController, Controller &controller) 
 
         ax = memAccess(ACCESS_TYPE_READ, 64, 0, addr);
 
-        baselineTags = baselineController.handleRead(ax);
-        tags = controller.handleRead(ax);
+        baselineTags = controller1.handleRead(ax);
+        tags = controller2.handleRead(ax);
 
         if (tags != baselineTags) {
             cout << "TAGS DIFFER AT ADDRESS " << addr << endl;
@@ -78,130 +78,211 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    ifstream initial_accesses {argv[2]};
-    gzFile trace = gzopen(argv[3], "rb");
+    ifstream initial_accesses {argv[1]};
+    gzFile trace = gzopen(argv[2], "rb");
 
     if (!initial_accesses) {
-        cout << "No file found by the name " << argv[2] << endl;
+        cout << "No file found by the name " << argv[1] << endl;
         return 2;
     }
 
     if (!trace) {
-        cout << "No file found by the name " << argv[3] << endl;
+        cout << "No file found by the name " << argv[2] << endl;
         return 3;
     }
 
     Decoder decoder = Decoder(initial_accesses, trace);
 
     size_t n;
-    if (argc >= 5) {
-        stringstream str(argv[4]);
-        str >> n;
-    } else {
-        n = 5000000;
-    }
-
-    size_t baselineCount, count;
+    stringstream str(argv[3]);
+    str >> n;
 
     gzFile output_trace = gzopen("/dev/null", "wb");
     ofstream output_log{"/dev/null"};
     unordered_set<size_t> log_points{};
+    if (argc >= 6) {
+        // cross-verify
+        size_t count1, count2;
+        Controller *controller1p;
+        Controller *controller2p;
 
-    if (strcmp(argv[1], "baseline") != 0) {
-        // Cross-verify the specified controller against the Baseline controller
-
-        cout << "Simulating Baseline" << endl;
-        BaselineController baselineController(output_trace, output_log);
-        baselineController.setup(decoder);
-        baselineCount = Simulator::processTrace(decoder, baselineController, n, log_points);
-        cout << "Processed [" << baselineCount << "] entries" << endl;
-
-        if (!strcmp(argv[1], "morello-t")) {
+        // simulation 1
+        if (!strcmp(argv[4], "morello-t")) {
             cout << "Simulating Morello tag controller implementation, Tag Cache" << endl;
-            MorelloController controller(output_trace, output_log, true);
-            controller.setup(decoder);
-            count = Simulator::processTrace(decoder, controller, n, log_points);
-            cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
-            controller.reportStats();
+            controller1p = new MorelloController(output_trace, output_log, true);
+            controller1p->setup(decoder);
+            count1 = Simulator::processTrace(decoder, *controller1p, n, log_points);
+            cout << "Performed [" << controller1p->getNumAccesses() << "] accesses" << endl;
+            controller1p->reportStats();
 
-            cout << "Processed [" << count << "] entries" << endl;
-            assert(count == baselineCount);
-            crossVerify(baselineController, controller);
-        } else if (!strcmp(argv[1], "morello-z")) {
+            cout << "Processed [" << count1 << "] entries" << endl;
+        } else if (!strcmp(argv[4], "morello-z")) {
             cout << "Simulating Morello tag controller implementation, Zero Cache" << endl;
-            MorelloController controller(output_trace, output_log, false);
-            controller.setup(decoder);
-            count = Simulator::processTrace(decoder, controller, n, log_points);
-            cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
-            controller.reportStats();
+            controller1p = new MorelloController (output_trace, output_log, false);
+            controller1p->setup(decoder);
+            count1 = Simulator::processTrace(decoder, *controller1p, n, log_points);
+            cout << "Performed [" << controller1p->getNumAccesses() << "] accesses" << endl;
+            controller1p->reportStats();
 
-            cout << "Processed [" << count << "] entries" << endl;
-            assert(count == baselineCount);
-            crossVerify(baselineController, controller);
-        } else if (!strcmp(argv[1], "etm")) {
+            cout << "Processed [" << count1 << "] entries" << endl;
+        } else if (!strcmp(argv[4], "etm")) {
             cout << "Simulating ETM tag controller implementation" << endl;
-            ETMController controller(output_trace, output_log);
-            controller.setup(decoder);
-            count = Simulator::processTrace(decoder, controller, n, log_points);
-            cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
-            controller.reportStats();
+            controller1p = new ETMController (output_trace, output_log);
+            controller1p->setup(decoder);
+            count1 = Simulator::processTrace(decoder, *controller1p, n, log_points);
+            cout << "Performed [" << controller1p->getNumAccesses() << "] accesses" << endl;
+            controller1p->reportStats();
 
-            cout << "Processed [" << count << "] entries" << endl;
-            assert(count == baselineCount);
-            crossVerify(baselineController, controller);
-        } else if (!strcmp(argv[1], "phoenix")) {
+            cout << "Processed [" << count1 << "] entries" << endl;
+        } else if (!strcmp(argv[4], "phoenix")) {
             cout << "Simulating Phoenix tag controller implementation" << endl;
-            PhoenixController controller(output_trace, output_log, 8, true);
-            controller.setup(decoder);
-            count = Simulator::processTrace(decoder, controller, n, log_points);
-            cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
-            controller.reportStats();
+            controller1p = new PhoenixController (output_trace, output_log, 8, true);
+            controller1p->setup(decoder);
+            count1 = Simulator::processTrace(decoder, *controller1p, n, log_points);
+            cout << "Performed [" << controller1p->getNumAccesses() << "] accesses" << endl;
+            controller1p->reportStats();
 
-            cout << "Processed [" << count << "] entries" << endl;
-            assert(count == baselineCount);
-            crossVerify(baselineController, controller);
-        } else if (!strcmp(argv[1], "dummyzero")) {
+            cout << "Processed [" << count1 << "] entries" << endl;
+        } else if (!strcmp(argv[4], "dummyzero")) {
             cout << "Simulating Dummy Zero tag controller implementation" << endl;
-            DummyZeroController controller(output_trace, output_log);
-            controller.setup(decoder);
-            count = Simulator::processTrace(decoder, controller, n, log_points);
-            cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
-            controller.reportStats();
+            controller1p = new DummyZeroController (output_trace, output_log);
+            controller1p->setup(decoder);
+            count1 = Simulator::processTrace(decoder, *controller1p, n, log_points);
+            cout << "Performed [" << controller1p->getNumAccesses() << "] accesses" << endl;
+            controller1p->reportStats();
 
-            cout << "Processed [" << count << "] entries" << endl;
-            assert(count == baselineCount);
-            crossVerify(baselineController, controller);
-        } else if (!strcmp(argv[1], "dummyone")) {
+            cout << "Processed [" << count1 << "] entries" << endl;
+        } else if (!strcmp(argv[4], "dummyone")) {
             cout << "Simulating Dummy Zero tag controller implementation" << endl;
-            DummyOneController controller(output_trace, output_log);
-            controller.setup(decoder);
-            count = Simulator::processTrace(decoder, controller, n, log_points);
-            cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
-            controller.reportStats();
+            controller1p = new DummyOneController (output_trace, output_log);
+            controller1p->setup(decoder);
+            count1 = Simulator::processTrace(decoder, *controller1p, n, log_points);
+            cout << "Performed [" << controller1p->getNumAccesses() << "] accesses" << endl;
+            controller1p->reportStats();
 
-            cout << "Processed [" << count << "] entries" << endl;
-            assert(count == baselineCount);
-            crossVerify(baselineController, controller);
+            cout << "Processed [" << count1 << "] entries" << endl;
         } else {
-            cout << "Baseline tag controller implementation" << endl;
-            BaselineController controller(output_trace, output_log);
-            controller.setup(decoder);
-            count = Simulator::processTrace(decoder, controller, n, log_points);
-            cout << "Performed [" << controller.getNumAccesses() << "] accesses" << endl;
-            controller.reportStats();
+            cout << "Simulating Baseline tag controller implementation" << endl;
+            controller1p = new BaselineController (output_trace, output_log);
+            controller1p->setup(decoder);
+            count1 = Simulator::processTrace(decoder, *controller1p, n, log_points);
+            cout << "Performed [" << controller1p->getNumAccesses() << "] accesses" << endl;
+            controller1p->reportStats();
 
-            cout << "Processed [" << count << "] entries" << endl;
-            assert(count == baselineCount);
-            crossVerify(baselineController, controller);
+            cout << "Processed [" << count1 << "] entries" << endl;
         }
-    } else {
-        // verify the Baseline controller
-        cout << "Baseline tag controller implementation" << endl;
-        BaselineController controller(output_trace, output_log);
-        controller.setup(decoder);
 
-        cout << "Beginning verification" << endl;
-        verify(decoder, controller, n);
+        // simulation 2
+        if (!strcmp(argv[5], "morello-t")) {
+            cout << "Simulating Morello tag controller implementation, Tag Cache" << endl;
+            controller2p = new MorelloController (output_trace, output_log, true);
+            controller2p->setup(decoder);
+            count2 = Simulator::processTrace(decoder, *controller2p, n, log_points);
+            cout << "Performed [" << controller2p->getNumAccesses() << "] accesses" << endl;
+            controller2p->reportStats();
+
+            cout << "Processed [" << count2 << "] entries" << endl;
+        } else if (!strcmp(argv[5], "morello-z")) {
+            cout << "Simulating Morello tag controller implementation, Zero Cache" << endl;
+            controller2p = new MorelloController (output_trace, output_log, false);
+            controller2p->setup(decoder);
+            count2 = Simulator::processTrace(decoder, *controller2p, n, log_points);
+            cout << "Performed [" << controller2p->getNumAccesses() << "] accesses" << endl;
+            controller2p->reportStats();
+
+            cout << "Processed [" << count2 << "] entries" << endl;
+        } else if (!strcmp(argv[5], "etm")) {
+            cout << "Simulating ETM tag controller implementation" << endl;
+            controller2p = new ETMController (output_trace, output_log);
+            controller2p->setup(decoder);
+            count2 = Simulator::processTrace(decoder, *controller2p, n, log_points);
+            cout << "Performed [" << controller2p->getNumAccesses() << "] accesses" << endl;
+            controller2p->reportStats();
+
+            cout << "Processed [" << count2 << "] entries" << endl;
+        } else if (!strcmp(argv[5], "phoenix")) {
+            cout << "Simulating Phoenix tag controller implementation" << endl;
+            controller2p = new PhoenixController (output_trace, output_log, 8, true);
+            controller2p->setup(decoder);
+            count2 = Simulator::processTrace(decoder, *controller2p, n, log_points);
+            cout << "Performed [" << controller2p->getNumAccesses() << "] accesses" << endl;
+            controller2p->reportStats();
+
+            cout << "Processed [" << count2 << "] entries" << endl;
+        } else if (!strcmp(argv[5], "dummyzero")) {
+            cout << "Simulating Dummy Zero tag controller implementation" << endl;
+            controller2p = new DummyZeroController (output_trace, output_log);
+            controller2p->setup(decoder);
+            count2 = Simulator::processTrace(decoder, *controller2p, n, log_points);
+            cout << "Performed [" << controller2p->getNumAccesses() << "] accesses" << endl;
+            controller2p->reportStats();
+
+            cout << "Processed [" << count2 << "] entries" << endl;
+        } else if (!strcmp(argv[5], "dummyone")) {
+            cout << "Simulating Dummy Zero tag controller implementation" << endl;
+            controller2p = new DummyOneController (output_trace, output_log);
+            controller2p->setup(decoder);
+            count2 = Simulator::processTrace(decoder, *controller2p, n, log_points);
+            cout << "Performed [" << controller2p->getNumAccesses() << "] accesses" << endl;
+            controller2p->reportStats();
+
+            cout << "Processed [" << count2 << "] entries" << endl;
+        } else {
+            cout << "Simulating Baseline tag controller implementation" << endl;
+            controller2p = new BaselineController (output_trace, output_log);
+            controller2p->setup(decoder);
+            count2 = Simulator::processTrace(decoder, *controller2p, n, log_points);
+            cout << "Performed [" << controller2p->getNumAccesses() << "] accesses" << endl;
+            controller2p->reportStats();
+
+            cout << "Processed [" << count2 << "] entries" << endl;
+        }
+
+        assert(count1 == count2);
+        crossVerify(*controller1p, *controller2p);
+
+        delete controller1p;
+        delete controller2p;
+
+    } else {
+        // verify
+        size_t count1;
+        Controller *controller1p;
+
+        // simulation 1
+        if (!strcmp(argv[4], "morello-t")) {
+            cout << "Simulating Morello tag controller implementation, Tag Cache" << endl;
+            controller1p = new MorelloController(output_trace, output_log, true);
+            controller1p->setup(decoder);
+        } else if (!strcmp(argv[4], "morello-z")) {
+            cout << "Simulating Morello tag controller implementation, Zero Cache" << endl;
+            controller1p = new MorelloController (output_trace, output_log, false);
+            controller1p->setup(decoder);
+        } else if (!strcmp(argv[4], "etm")) {
+            cout << "Simulating ETM tag controller implementation" << endl;
+            controller1p = new ETMController (output_trace, output_log);
+            controller1p->setup(decoder);
+        } else if (!strcmp(argv[4], "phoenix")) {
+            cout << "Simulating Phoenix tag controller implementation" << endl;
+            controller1p = new PhoenixController (output_trace, output_log, 8, true);
+            controller1p->setup(decoder);
+        } else if (!strcmp(argv[4], "dummyzero")) {
+            cout << "Simulating Dummy Zero tag controller implementation" << endl;
+            controller1p = new DummyZeroController (output_trace, output_log);
+            controller1p->setup(decoder);
+        } else if (!strcmp(argv[4], "dummyone")) {
+            cout << "Simulating Dummy Zero tag controller implementation" << endl;
+            controller1p = new DummyOneController (output_trace, output_log);
+            controller1p->setup(decoder);
+        } else {
+            cout << "Simulating Baseline tag controller implementation" << endl;
+            controller1p = new BaselineController (output_trace, output_log);
+            controller1p->setup(decoder);
+        }
+
+        verify(decoder, *controller1p, n);
+
+        delete controller1p;
     }
 
     gzclose(trace);
