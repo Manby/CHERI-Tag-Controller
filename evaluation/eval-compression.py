@@ -7,6 +7,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-l', dest='workload_list', type=str, required=True)
 parser.add_argument('-n', dest='n', type=str, required=True)
 parser.add_argument('-d', dest='divisions', type=str, required=False, default="10")
+parser.add_argument('-s', dest='skip', type=str, required=False, default="0")
 
 parsed_args = parser.parse_args()
 
@@ -14,6 +15,7 @@ workloads = getWorkloads(parsed_args.workload_list)
 
 stats = {}
 save_name = "saves/eval-compression-"+getTimestamp()+".json"
+skip = int(parsed_args.skip)
 
 schemes = ["baseline", "phoenix-8f", "phoenix-4t", "phoenix-4f"]
 
@@ -28,6 +30,10 @@ for workload in workloads:
 
     print("******************  USING WORKLOAD: " + workload[0] + "  ******************")
     for scheme in schemes:
+        if skip > 0:
+            skip -= 1
+            continue
+
         print("##########  EMULATING SCHEME: " + scheme + "  ##########")
         if scheme == "baseline":
             curr_workload_stats[scheme] = doRunCompression(scheme, initial_state, llc_requests,

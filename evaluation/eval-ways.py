@@ -7,6 +7,7 @@ parser.add_argument('-l', dest='workload_list', type=str, required=True)
 parser.add_argument('-n', dest='n', type=str, required=True)
 parser.add_argument('-w', dest='warmup', type=str, required=False, default="0.1")
 parser.add_argument('-m', dest='morello', type=str, required=False, default="no")
+parser.add_argument('-s', dest='skip', type=str, required=False, default="0")
 
 parsed_args = parser.parse_args()
 
@@ -14,6 +15,7 @@ workloads = getWorkloads(parsed_args.workload_list)
 
 stats = {}
 save_name = "saves/eval-ways-"+getTimestamp()+".json"
+skip = int(parsed_args.skip)
 
 if parsed_args.morello == "yes":
     schemes = ["morello-t", "morello-z"]
@@ -49,36 +51,43 @@ for workload in workloads:
     if parsed_args.morello == "yes":
         for params_t, params_z in zip(cache_params_t, cache_params_z):
             curr_params_stats = {}
-            # first do tag cache
-            # update the cache parameters
-            print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
-            champsimConfig(*params_t)
-            print("\n\n")
 
-            scheme = "morello-t"
-            print("##########  EMULATING SCHEME: " + scheme + "  ##########")
-            curr_params_stats[scheme] = doRun(scheme, initial_state, llc_requests,
-                                                int(parsed_args.n),
-                                                float(parsed_args.warmup))
+            if skip > 0:
+                skip -= 1
+            else:
+                # first do tag cache
+                # update the cache parameters
+                print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
+                champsimConfig(*params_t)
+                print("\n\n")
 
-            curr_workload_stats[str((params_t, params_z))] = curr_params_stats
-            stats[workload[0]] = curr_workload_stats
-            save(stats, save_name)
+                scheme = "morello-t"
+                print("##########  EMULATING SCHEME: " + scheme + "  ##########")
+                curr_params_stats[scheme] = doRun(scheme, initial_state, llc_requests,
+                                                    int(parsed_args.n),
+                                                    float(parsed_args.warmup))
 
-            # next do zero cache
-            # update the cache parameters
-            print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
-            champsimConfig(*params_z)
-            print("\n\n")
-            scheme = "morello-z"
-            print("##########  EMULATING SCHEME: " + scheme + "  ##########")
-            curr_params_stats[scheme] = doRun(scheme, initial_state, llc_requests,
-                                                int(parsed_args.n),
-                                                float(parsed_args.warmup))
+                curr_workload_stats[str((params_t, params_z))] = curr_params_stats
+                stats[workload[0]] = curr_workload_stats
+                save(stats, save_name)
 
-            curr_workload_stats[str((params_t, params_z))] = curr_params_stats
-            stats[workload[0]] = curr_workload_stats
-            save(stats, save_name)
+            if skip > 0:
+                skip -= 1
+            else:
+                # next do zero cache
+                # update the cache parameters
+                print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
+                champsimConfig(*params_z)
+                print("\n\n")
+                scheme = "morello-z"
+                print("##########  EMULATING SCHEME: " + scheme + "  ##########")
+                curr_params_stats[scheme] = doRun(scheme, initial_state, llc_requests,
+                                                    int(parsed_args.n),
+                                                    float(parsed_args.warmup))
+
+                curr_workload_stats[str((params_t, params_z))] = curr_params_stats
+                stats[workload[0]] = curr_workload_stats
+                save(stats, save_name)
 
     else:
         for params in cache_params:
@@ -89,6 +98,10 @@ for workload in workloads:
             print("\n\n")
 
             for scheme in schemes:
+                if skip > 0:
+                    skip -= 1
+                    continue
+
                 print("##########  EMULATING SCHEME: " + scheme + "  ##########")
                 curr_params_stats[scheme] = doRun(scheme, initial_state, llc_requests,
                                                     int(parsed_args.n),

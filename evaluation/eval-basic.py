@@ -7,6 +7,7 @@ parser.add_argument('-l', dest='workload_list', type=str, required=True)
 parser.add_argument('-n', dest='n', type=str, required=True)
 parser.add_argument('-w', dest='warmup', type=str, required=False, default="0.1")
 parser.add_argument('-m', dest='morello', type=str, required=False, default="no")
+parser.add_argument('-s', dest='skip', type=str, required=False, default="0")
 
 parsed_args = parser.parse_args()
 
@@ -14,13 +15,10 @@ workloads = getWorkloads(parsed_args.workload_list)
 
 stats = {}
 save_name = "saves/eval-basic-"+getTimestamp()+".json"
+skip = int(parsed_args.skip)
 
 if parsed_args.morello == "yes":
     schemes = ["morello-t", "morello-z"]
-
-    print("~~~~~ Configuring ChampSim ~~~~~\n")
-    champsimConfig(64, 4, None)        # 4-way 16KiB Cache
-    print("\n\n")
 
 else:
     schemes = ["baseline", "etm", "phoenix-8t"]
@@ -36,7 +34,16 @@ for workload in workloads:
 
     print("******************  USING WORKLOAD: " + workload[0] + "  ******************")
     for scheme in schemes:
-        if scheme == "morello-z":
+        if skip > 0:
+            skip -= 1
+            continue
+
+        if scheme == "morello-t":
+            # update the cache parameters
+            print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
+            champsimConfig(64, 4, None)        # 4-way 16KiB Cache
+            print("\n\n")
+        elif scheme == "morello-z":
             # update the cache parameters
             print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
             champsimConfig(64, 4, None)        # 4-way 16KiB Cache
