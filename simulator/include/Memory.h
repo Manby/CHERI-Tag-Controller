@@ -55,14 +55,14 @@ private:
         return {base, offset};
     }
 
-    void logRead(uint64_t addr) {
+    void traceRead(uint64_t addr) {
         DBG cout << "CACHE READ  @ " << addr << endl;
         champsimInstr trace_entry(i++, addressToBaseOffsetPair(addr).first, true);
         gzwrite(trace, (char *) &trace_entry, sizeof(trace_entry));
         TST prevLogged.push_back(trace_entry);
     }
 
-    void logWrite(uint64_t addr) {
+    void traceWrite(uint64_t addr) {
         DBG cout << "CACHE WRITE @ " << addr << endl;
         // TODO: store data in dict when appropriate
         champsimInstr trace_entry(i++, addressToBaseOffsetPair(addr).first, false);
@@ -83,7 +83,7 @@ public:
         Cacheline line = it->second;
 
         DBG cout << "CACHE DID DICTIONARY READ" << endl;
-        logRead(addr);
+        traceRead(addr);
 
         return line;
     }
@@ -93,7 +93,7 @@ public:
         data[addr] = line;
 
         DBG cout << "CACHE DID DICTIONARY WRITE" << endl;
-        logWrite(addr);
+        traceWrite(addr);
     }
 
     void set(uint64_t addr, Cacheline line) {
