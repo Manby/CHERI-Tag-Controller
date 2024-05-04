@@ -13,14 +13,13 @@
 
 int verify(Decoder &decoder, Controller &controller, size_t n) {
     uint16_t tags, bufferTags;
-    size_t i = 0;
     int discrepancies = 0;
 
     vector<memAccess> buffer(CHUNK_SIZE);
     for (size_t at = 0; at < n; at += CHUNK_SIZE) {
         size_t read = decoder.readLLCMisses(buffer, min(CHUNK_SIZE, n-at));
 
-        int i = 0;
+        size_t i = 0;
         for (size_t remaining = read; remaining > 0; --remaining) {     // CLion hint can be ignored
             if (buffer[i].type == ACCESS_TYPE_READ) {
                 tags = controller.handleRead(buffer[i]);  // calls are automatically inlined

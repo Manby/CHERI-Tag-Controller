@@ -24,8 +24,8 @@ public:
                     controller.handleRead(buffer[i]);  // calls are automatically inlined
                 else controller.handleWrite(buffer[i]);
 
-                if (log_points.find(i) != log_points.end()) {
-                    cout << "LOG @ " << i << endl;
+                if (log_points.find(processed) != log_points.end()) {
+                    cout << "LOG @ " << processed << endl;
                     controller.dump_table();
                 }
 
