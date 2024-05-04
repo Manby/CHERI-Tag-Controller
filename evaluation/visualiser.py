@@ -26,6 +26,8 @@ def doRun(scheme, initial_state, llc_requests, n, logpoints, output):
     access_logpoints = getAccessLogpoints(controllerSimOut)
     num_accesses = getNumAccesses(controllerSimOut)
 
+    champsimConfig(128, 4, None)
+
     print("\n===== Running ChampSim =====\n")
     runChampsim("--warmup-instructions", "0", "--simulation-instructions",
                 num_accesses, "out/output_trace.gz", "--logpoints",
