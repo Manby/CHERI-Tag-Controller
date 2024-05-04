@@ -31,6 +31,15 @@ if parsed_args.morello == "yes":
             (32, 8, None)
             ]
 
+elif parsed_args.morello == "p":
+    schemes = ["phoenixs-8t", "phoenix-8t"]
+
+    cache_params = [
+            (512, 1, None),
+            (256, 2, None),
+            (64, 8, None)
+            ]
+
 else:
     schemes = ["baseline", "etm", "phoenix-8t"]
 

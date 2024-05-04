@@ -8,6 +8,7 @@ parser.add_argument('-l', dest='workload_list', type=str, required=True)
 parser.add_argument('-n', dest='n', type=str, required=True)
 parser.add_argument('-d', dest='divisions', type=str, required=False, default="10")
 parser.add_argument('-s', dest='skip', type=str, required=False, default="0")
+parser.add_argument('-m', dest='morello', type=str, required=False, default="no")
 
 parsed_args = parser.parse_args()
 
@@ -17,7 +18,11 @@ stats = {}
 save_name = "saves/eval-compression-"+getTimestamp()+".json"
 skip = int(parsed_args.skip)
 
-schemes = ["baseline", "phoenix-8f", "phoenix-4t", "phoenix-4f"]
+if parsed_args.morello == "p":
+    schemes = ["phoenixs-8f", "phoenixs-4t", "phoenixs-4f", "phoenix-8f",
+               "phoenix-4t", "phoenix-4f"]
+else:
+    schemes = ["baseline", "phoenix-8f", "phoenix-4t", "phoenix-4f"]
 
 print("~~~~~ Configuring ChampSim ~~~~~\n")
 champsimConfig(128, 4, None)        # 4-way 32KiB Cache

@@ -20,6 +20,9 @@ skip = int(parsed_args.skip)
 if parsed_args.morello == "yes":
     schemes = ["morello-t", "morello-z"]
 
+elif parsed_args.morello == "p":
+    schemes = ["phoenixs-8t", "phoenix-8t"]
+
 else:
     schemes = ["baseline", "etm", "phoenix-8t"]
 
