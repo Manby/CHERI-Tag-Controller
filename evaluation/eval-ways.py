@@ -21,23 +21,23 @@ if parsed_args.morello == "yes":
     schemes = ["morello-t", "morello-z"]
 
     cache_params_t = [
-            (64, 1, None),
-            (64, 2, None),
-            (64, 8, None)
+            (256, 1, None),
+            (128, 2, None),
+            (32, 8, None)
             ]
     cache_params_z = [
-            (64, 1, None),
-            (64, 2, None),
-            (64, 8, None)
+            (256, 1, None),
+            (128, 2, None),
+            (32, 8, None)
             ]
 
 else:
     schemes = ["baseline", "etm", "phoenix-8t"]
 
     cache_params = [
-            (128, 1, None),
-            (128, 2, None),
-            (128, 8, None)
+            (512, 1, None),
+            (256, 2, None),
+            (64, 8, None)
             ]
 
 for workload in workloads:
