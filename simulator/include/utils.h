@@ -20,6 +20,20 @@ bool isClear(Cacheline &line) {
     return clear;
 }
 
+// computes whether eight bytes of a cacheline contain any set bits or not
+bool eightBytesClear(Cacheline &line, uint8_t whichEight) {
+    uint8_t byte;
+    bool clear = true;
+    for (int i = whichEight * 8; i < whichEight * 8 + 8; i++) {
+        byte = line[i];
+        if (byte != 0) {
+            clear = false;
+            break;
+        }
+    }
+    return clear;
+}
+
 void modifyTags(Cacheline &line, uint16_t bit_index, uint16_t tags) {   // modify 4 tags at a time
     std::bitset<8> byte = line[bit_index / 8];
     byte[7 - (bit_index % 8)] = (tags & 8) ? 1 : 0;

@@ -15,9 +15,9 @@
 #include "schema.h"
 #include "utils.h"
 
-constexpr uint64_t SUPERROOT_TABLE_SIZE = ROOT_TABLE_SIZE >> 9;
+constexpr uint64_t S_SUPERROOT_TABLE_SIZE = ROOT_TABLE_SIZE >> 6;
 
-class PhoenixController : public Controller {
+class PhoenixSController : public Controller {
 protected:
     vector<uint16_t> tag_working_set;    // set of blocks in the current tag working set; ordered by LRU policy, with LRU at the front
     unordered_set<uint16_t> allocated;          // set of blocks that currently have an allocated portion of DRAM
@@ -30,7 +30,7 @@ protected:
         // TODO: DO I NEED TO SUBTRACT THE SIZE OF THE TAG TABLE ITSELF FROM EACH ADDRESS (BEFORE DOING ANY MATHS WITH IT)?
         // Though this would mean that the few accesses to nullptr would underflow..... perhaps check the source code of the thing that generated the trace files
 
-        uint64_t leaf_base = (((addr_base / 128) >> 6) << 6) + SUPERROOT_TABLE_SIZE + ROOT_TABLE_SIZE;  // base address of the tag cacheline (byte address)
+        uint64_t leaf_base = (((addr_base / 128) >> 6) << 6) + S_SUPERROOT_TABLE_SIZE + ROOT_TABLE_SIZE;  // base address of the tag cacheline (byte address)
         uint16_t leaf_offset = ((addr_base>>6)*4) % 512;         // index into the tag cacheline (bit-index; multiple of 4 in [0,512))
         //cout << "LEAF ADDR " << leaf_base << endl;
         return {leaf_base, leaf_offset};   // 1 bit (the tag) per 16 bytes (the capability-aligned address)
@@ -40,7 +40,7 @@ protected:
         // TODO: DO I NEED TO SUBTRACT THE SIZE OF THE TAG TABLE ITSELF FROM EACH ADDRESS (BEFORE DOING ANY MATHS WITH IT)?
         // Though this would mean that the few accesses to nullptr would underflow..... perhaps check the source code of the thing that generated the trace files
 
-        uint64_t root_base = (((addr_base / 65536) >> 6) << 6) + SUPERROOT_TABLE_SIZE;  // base address of the tag cacheline (byte address)
+        uint64_t root_base = (((addr_base / 65536) >> 6) << 6) + S_SUPERROOT_TABLE_SIZE;  // base address of the tag cacheline (byte address)
         uint16_t root_offset = ((addr_base>>6)*4 / 512) % 512;         // index into the tag cacheline (bit-index; in [0,512))
         //cout << "ROOT ADDR " << root_base << endl;
         return {root_base, root_offset};
@@ -50,19 +50,21 @@ protected:
         // TODO: DO I NEED TO SUBTRACT THE SIZE OF THE TAG TABLE ITSELF FROM EACH ADDRESS (BEFORE DOING ANY MATHS WITH IT)?
         // Though this would mean that the few accesses to nullptr would underflow..... perhaps check the source code of the thing that generated the trace files
 
-        uint64_t superroot_base = ((addr_base / 33554432) >> 6) << 6;  // base address of the tag cacheline (byte address) -- this will always be 0 when memory is 2GiB (1 << 31)
-        uint16_t superroot_offset = ((addr_base >> 6) * 4 / 512 / 512) % 512;         // index into the tag cacheline (bit-index; in [0,512))
+        uint64_t superroot_base = ((addr_base / 4194304) >> 6) << 6;  // base address of the tag cacheline (byte address)
+        uint16_t superroot_offset = ((addr_base >> 6) * 4 / 512 / 64) % 512;         // index into the tag cacheline (bit-index; in [0,512))
         //cout << "SPRT ADDR " << superroot_base << endl;
         return {superroot_base, superroot_offset};
     }
 
     uint16_t blockIndex(uint64_t addr) {
-        return (addr / 65536) >> 6;     // leaves only the top 9 bits of the addr (so its in the range [0,512))
+        return (addr / 8192) >> 6;     // leaves only the top 12 bits of the addr (so its in the range [0,4096))
     }
 
     bool isBlockClear(uint16_t index) {
-        Cacheline line = memory.doRead(0);
-        return !getTag(line, index);
+        //cout << "reading bi " << 64*(index/512) << endl;
+        Cacheline line = memory.doRead(64*(index/512));
+        //cout << "done" << endl;
+        return !getTag(line, index%512);
     }
 
     bool isInTWS(uint16_t index) {
@@ -120,47 +122,50 @@ protected:
 
 
 public:
-    PhoenixController(gzFile output_trace, ofstream &output_log, int twsSize, bool useTrueLRU) : Controller(output_trace, output_log), tag_working_set(), allocated(), twsSize(twsSize), useTrueLRU(useTrueLRU), dramUsage(), allocCount(0), freeCount(0) {}
+    PhoenixSController(gzFile output_trace, ofstream &output_log, int twsSize, bool useTrueLRU) : Controller(output_trace, output_log), tag_working_set(), allocated(), twsSize(twsSize), useTrueLRU(useTrueLRU), dramUsage(), allocCount(0), freeCount(0) {}
 
     void setup(Decoder &decoder) override {
         Cacheline superroot_line, root_line, leaf_line;
-        uint8_t superroot_byte, root_byte;
-        bool no_leaves_set;
+        uint8_t superroot_byte = 0, root_byte = 0;
         uint16_t index = 0;      // block index
+        int a=0, b=0, c=0, d=0, e=0;
+        bool clear;
 
-        superroot_byte = 0;
-        for (uint64_t rl = 0; rl < ROOT_TABLE_SIZE; rl += TAG_CACHE_LINE_SIZE) {        // do one root cacheline line at a time
-            for (int rb = 0; rb < TAG_CACHE_LINE_SIZE; ++rb) {                          // each root cacheline contains TAG_CACHE_LINE_SIZE bytes
+        for (uint64_t tag = 0; tag < TAG_TABLE_SIZE*8; tag += TAG_CACHE_LINE_SIZE*8) {
+            decoder.getInitialTags(tag, TAG_CACHE_LINE_SIZE*8, leaf_line);
+
+
+            memory.set(tag/8 + ROOT_TABLE_SIZE + S_SUPERROOT_TABLE_SIZE, leaf_line);     // insert the leaf line into the cache
+
+            if (true) {                             // doing root bit
+                root_byte <<= 1;
+                root_byte |= isClear(leaf_line) ? 0 : 1;
+            }
+            if (((tag/512)+1) % 8 == 0) {                             // 8th doing root line
+                root_line[a++] = root_byte;      // push the root byte into the line
                 root_byte = 0;
-                for (int rt = 0; rt < 8; ++rt) {                                        // each byte contains 8 tags
-                    root_byte <<= 1;
-
-                    // focus on this single root tag
-                    decoder.getInitialTags((8*rl+8*rb+rt)*TAG_CACHE_LINE_SIZE*8, TAG_CACHE_LINE_SIZE*8, leaf_line);
-
-                    no_leaves_set = isClear(leaf_line);
-
-                    memory.set(TAG_CACHE_LINE_SIZE*(8*rl+8*rb+rt) + ROOT_TABLE_SIZE + SUPERROOT_TABLE_SIZE, leaf_line);     // insert the leaf line into the cache
-
-                    root_byte |= no_leaves_set ? 0 : 1;
-                }
-
-                root_line[rb] = root_byte;      // push the root byte into the line
+            }
+            if (((tag/512)+1) % (8*64) == 0) {                             // doing root line
+                memory.set((b++)*64 + S_SUPERROOT_TABLE_SIZE, root_line);     // insert the leaf line into the cache
+                a=0;
             }
 
-            memory.set(rl + SUPERROOT_TABLE_SIZE, root_line);     // insert the root line into the cache
-
-            superroot_byte <<= 1;
-            superroot_byte |= isClear(root_line) ? 0 : 1;
-            if ((rl / TAG_CACHE_LINE_SIZE) % 8 == 7) {
-                superroot_line[rl / TAG_CACHE_LINE_SIZE / 8] = superroot_byte;
+            if (((tag/512)+1) % 64 == 0) {                             // doing superroot bit   (every 8 bytes of root tags)
+                superroot_byte <<= 1;
+                clear = eightBytesClear(root_line, c++);
+                superroot_byte |= clear ? 0 : 1;
+                if (!clear) allocated.insert(index);
+            }
+            if (((tag/512)+1) % (64*8) == 0) {                             // 8th doing superroot line
+                superroot_line[d++] = superroot_byte;      // push the root byte into the line
                 superroot_byte = 0;
+                c=0;
             }
-
-            if (!isClear(root_line)) allocated.insert(index);
-            index++;
+            if (((tag/512)+1) % (64*8*64) == 0) {                             // doing superroot line
+                memory.set((e++)*64, superroot_line);     // insert the leaf line into the cache
+                d=0;
+            }
         }
-        memory.set(0, superroot_line);
 
         updateDramUsage();
     };
@@ -179,7 +184,9 @@ public:
                     result = translateToSuperrootAddr(ax.addr);
                     superroot_base_addr = result.first;
                     superroot_cacheline_index = result.second;
+                    //cout << "reading sr " << superroot_base_addr << endl;
                     superroot_line = memory.doRead(superroot_base_addr);
+                    //cout << "done" << endl;
 
                     superroot_tag = getTag(superroot_line, superroot_cacheline_index);
                     if (!superroot_tag) {
@@ -194,7 +201,9 @@ public:
                 result = translateToRootAddr(ax.addr);
                 root_base_addr = result.first;
                 root_cacheline_index = result.second;
+                //cout << "reading r " << root_base_addr << endl;
                 root_line = memory.doRead(root_base_addr);
+                //cout << "done" << endl;
 
                 root_tag = getTag(root_line, root_cacheline_index);
                 if (!root_tag) {
@@ -206,7 +215,9 @@ public:
                 result = translateToLeafAddr(ax.addr);
                 leaf_base_addr = result.first;
                 leaf_cacheline_index = result.second;
+                //cout << "reading l " << leaf_base_addr << endl;
                 leaf_line = memory.doRead(leaf_base_addr);
+                //cout << "done" << endl;
 
                 tags = getTags(leaf_line, leaf_cacheline_index);
                 break;
@@ -235,7 +246,9 @@ public:
                     result = translateToSuperrootAddr(ax.addr);
                     superroot_base_addr = result.first;
                     superroot_cacheline_index = result.second;
+                    //cout << "reading sr " << superroot_base_addr << endl;
                     superroot_line = memory.doRead(superroot_base_addr);
+                    //cout << "done" << endl;
 
                     superroot_tag = getTag(superroot_line, superroot_cacheline_index);
                     if (!superroot_tag) {
@@ -246,7 +259,9 @@ public:
                     result = translateToRootAddr(ax.addr);
                     root_base_addr = result.first;
                     root_cacheline_index = result.second;
+                    //cout << "reading r " << root_base_addr << endl;
                     root_line = memory.doRead(root_base_addr);
+                    //cout << "done" << endl;
 
                     root_tag = getTag(root_line, root_cacheline_index);
                     if (!root_tag) {
@@ -257,12 +272,16 @@ public:
                     result = translateToLeafAddr(ax.addr);
                     leaf_base_addr = result.first;
                     leaf_cacheline_index = result.second;
+                    //cout << "reading l " << leaf_base_addr << endl;
                     leaf_line = memory.doRead(leaf_base_addr);
+                    //cout << "done" << endl;
 
                     modifyTags(leaf_line, leaf_cacheline_index, ax.tags);
 
                     if (!isClear(leaf_line)) {
+                        //cout << "writing l " << leaf_base_addr << endl;
                         memory.doWrite(leaf_base_addr, leaf_line);
+                        //cout << "done" << endl;
                         break;
                     }
 
@@ -274,9 +293,11 @@ public:
                      */
 
                     modifyTag(root_line, root_cacheline_index, 0);
+                    //cout << "writing r " << root_base_addr << endl;
                     memory.doWrite(root_base_addr, root_line);
+                    //cout << "done" << endl;
 
-                    if (!isClear(root_line)) break;
+                    if (!eightBytesClear(root_line, superroot_cacheline_index%8)) break;
 
                     /*
                     result = translateToSuperRootAddr(ax.addr);
@@ -286,7 +307,9 @@ public:
                      */
 
                     modifyTag(superroot_line, superroot_cacheline_index, 0);
+                    //cout << "writing sr " << superroot_base_addr << endl;
                     memory.doWrite(superroot_base_addr, superroot_line);
+                    //cout << "done" << endl;
 
                     if (!isInTWS(index)) {
                         DRAMFree(index);
@@ -296,7 +319,9 @@ public:
                     result = translateToSuperrootAddr(ax.addr);
                     superroot_base_addr = result.first;
                     superroot_cacheline_index = result.second;
+                    //cout << "reading sr " << superroot_base_addr << endl;
                     superroot_line = memory.doRead(superroot_base_addr);
+                    //cout << "done" << endl;
 
                     superroot_tag = getTag(superroot_line, superroot_cacheline_index);
 
@@ -310,12 +335,16 @@ public:
                             DRAMAllocate(index);
                         }
                         modifyTag(superroot_line, superroot_cacheline_index, 1);
+                        //cout << "writing sr " << superroot_base_addr << endl;
                         memory.doWrite(superroot_base_addr, superroot_line);
+                        //cout << "done" << endl;
 
                         root_line = Cacheline{};    // a fully-zero cacheline
 
                     } else {
+                        //cout << "reading r " << root_base_addr << endl;
                         root_line = memory.doRead(root_base_addr);
+                        //cout << "done" << endl;
                         root_tag = getTag(root_line, root_cacheline_index);
                     }
 
@@ -325,14 +354,20 @@ public:
 
                     if (!superroot_tag || !root_tag) {
                         modifyTag(root_line, root_cacheline_index, 1);
+                        //cout << "writing r " << root_base_addr << endl;
                         memory.doWrite(root_base_addr, root_line);
+                        //cout << "done" << endl;
                         leaf_line = Cacheline{};    // a fully-zero cacheline
                     } else {
+                        //cout << "reading l " << leaf_base_addr << endl;
                         leaf_line = memory.doRead(leaf_base_addr);
+                        //cout << "done" << endl;
                     }
 
                     modifyTags(leaf_line, leaf_cacheline_index, ax.tags);
+                    //cout << "writing l " << leaf_base_addr << endl;
                     memory.doWrite(leaf_base_addr, leaf_line);
+                    //cout << "done" << endl;
                     break;
                 }
         }

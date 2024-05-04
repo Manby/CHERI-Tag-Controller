@@ -4,6 +4,7 @@
 #include "../include/ETMController.h"
 #include "../include/MorelloController.h"
 #include "../include/PhoenixController.h"
+#include "../include/PhoenixSController.h"
 #include "../include/DummyOneController.h"
 #include "../include/DummyZeroController.h"
 #include <fstream>
@@ -58,8 +59,8 @@ int crossVerify(Controller &controller1, Controller &controller2) {
 
         if (tags != baselineTags) {
             cout << "TAGS DIFFER AT ADDRESS " << addr << endl;
-            cout << "BASELINE TAGS: " << baselineTags << endl;
-            cout << "OTHER TAGS:    " << tags << endl;
+            cout << "CONTROLLER 1 TAGS: " << baselineTags << endl;
+            cout << "CONTROLLER 2 TAGS:    " << tags << endl;
             discrepancies++;
         }
     }
@@ -142,6 +143,15 @@ int main(int argc, char *argv[]) {
             controller1p->reportStats();
 
             cout << "Processed [" << count1 << "] entries" << endl;
+        } else if (!strcmp(argv[4], "phoenixs")) {
+            cout << "Simulating Small Phoenix tag controller implementation" << endl;
+            controller1p = new PhoenixSController (output_trace, output_log, 8, true);
+            controller1p->setup(decoder);
+            count1 = Simulator::processTrace(decoder, *controller1p, n, log_points);
+            cout << "Performed [" << controller1p->getNumAccesses() << "] accesses" << endl;
+            controller1p->reportStats();
+
+            cout << "Processed [" << count1 << "] entries" << endl;
         } else if (!strcmp(argv[4], "dummyzero")) {
             cout << "Simulating Dummy Zero tag controller implementation" << endl;
             controller1p = new DummyZeroController (output_trace, output_log);
@@ -152,7 +162,7 @@ int main(int argc, char *argv[]) {
 
             cout << "Processed [" << count1 << "] entries" << endl;
         } else if (!strcmp(argv[4], "dummyone")) {
-            cout << "Simulating Dummy Zero tag controller implementation" << endl;
+            cout << "Simulating Dummy One tag controller implementation" << endl;
             controller1p = new DummyOneController (output_trace, output_log);
             controller1p->setup(decoder);
             count1 = Simulator::processTrace(decoder, *controller1p, n, log_points);
@@ -208,6 +218,15 @@ int main(int argc, char *argv[]) {
             controller2p->reportStats();
 
             cout << "Processed [" << count2 << "] entries" << endl;
+        } else if (!strcmp(argv[5], "phoenixs")) {
+            cout << "Simulating Small Phoenix tag controller implementation" << endl;
+            controller2p = new PhoenixSController (output_trace, output_log, 8, true);
+            controller2p->setup(decoder);
+            count2 = Simulator::processTrace(decoder, *controller2p, n, log_points);
+            cout << "Performed [" << controller2p->getNumAccesses() << "] accesses" << endl;
+            controller2p->reportStats();
+
+            cout << "Processed [" << count2 << "] entries" << endl;
         } else if (!strcmp(argv[5], "dummyzero")) {
             cout << "Simulating Dummy Zero tag controller implementation" << endl;
             controller2p = new DummyZeroController (output_trace, output_log);
@@ -218,7 +237,7 @@ int main(int argc, char *argv[]) {
 
             cout << "Processed [" << count2 << "] entries" << endl;
         } else if (!strcmp(argv[5], "dummyone")) {
-            cout << "Simulating Dummy Zero tag controller implementation" << endl;
+            cout << "Simulating Dummy One tag controller implementation" << endl;
             controller2p = new DummyOneController (output_trace, output_log);
             controller2p->setup(decoder);
             count2 = Simulator::processTrace(decoder, *controller2p, n, log_points);
@@ -265,12 +284,16 @@ int main(int argc, char *argv[]) {
             cout << "Simulating Phoenix tag controller implementation" << endl;
             controller1p = new PhoenixController (output_trace, output_log, 8, true);
             controller1p->setup(decoder);
+        } else if (!strcmp(argv[4], "phoenixs")) {
+            cout << "Simulating Small Phoenix tag controller implementation" << endl;
+            controller1p = new PhoenixSController (output_trace, output_log, 8, true);
+            controller1p->setup(decoder);
         } else if (!strcmp(argv[4], "dummyzero")) {
             cout << "Simulating Dummy Zero tag controller implementation" << endl;
             controller1p = new DummyZeroController (output_trace, output_log);
             controller1p->setup(decoder);
         } else if (!strcmp(argv[4], "dummyone")) {
-            cout << "Simulating Dummy Zero tag controller implementation" << endl;
+            cout << "Simulating Dummy One tag controller implementation" << endl;
             controller1p = new DummyOneController (output_trace, output_log);
             controller1p->setup(decoder);
         } else {
