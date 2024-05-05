@@ -23,6 +23,9 @@ if parsed_args.morello == "yes":
 elif parsed_args.morello == "p":
     schemes = ["phoenixs-8t", "phoenix-8t"]
 
+elif parsed_args.morello == "s":
+    schemes = ["phoenixs-8t"]
+
 else:
     schemes = ["baseline", "etm", "phoenix-8t"]
 

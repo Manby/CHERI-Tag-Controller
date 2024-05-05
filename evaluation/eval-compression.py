@@ -21,6 +21,8 @@ skip = int(parsed_args.skip)
 if parsed_args.morello == "p":
     schemes = ["phoenixs-8f", "phoenixs-4t", "phoenixs-4f", "phoenix-8f",
                "phoenix-4t", "phoenix-4f"]
+elif parsed_args.morello == "s":
+    schemes = ["phoenixs-8f", "phoenixs-4t", "phoenixs-4f"]
 else:
     schemes = ["baseline", "phoenix-8f", "phoenix-4t", "phoenix-4f"]
 
