@@ -166,3 +166,37 @@ def lines(ax, d, vars, schemes, type_, count):
         ax.plot(x, y, label=scheme)
 
     ax.set_xticks(x, vars)
+
+def boxes(ax, width, d, groups, schemes):
+    x = np.arange(len(groups))
+
+    i = 0
+
+    # [group1, group2, ...] group1=[[a1, a2, ...], [b1, b2, ...]]
+    data = []
+
+    for group in groups:
+        l = []
+        for scheme in schemes:
+            if scheme == 'baseline':
+                vals = [avg([d[group][scheme][1][alg][i] for alg in d[group][scheme][1]]) for i in range(len(d[group][scheme][1]['gzip']))]
+                #rects = ax.boxplot(x + width * i, vals, widths=width)
+                #ax.bar_label(rects, padding=3)
+
+
+            else:
+                vals = [d[group][scheme]['blocks']['avg'],]
+
+            l.append(vals)
+
+        data.append(l)
+        i += 1
+
+    for i, group in enumerate(groups):
+        ax.boxplot(data[i], positions = [1 + i * (len(schemes) + 1) + j for j in range(len(schemes))], widths=width)
+
+    ax.set_xticks([avg([1 + i * (len(schemes) + 1) + j for j in range(len(schemes))]) for i, group in enumerate(groups)])
+    ax.set_xticklabels(groups)
+
+def avg(l):
+    return sum(l) / len(l)
