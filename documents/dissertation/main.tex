@@ -16,6 +16,18 @@
 \captionsetup{labelfont={color=gray,it},textfont={color=gray,it}}
 \usepackage[utf8]{inputenc}
 \usepackage{tikz}
+\usepackage{titlesec}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+\usepackage{minted}[breaklines,linenos]
+\definecolor{codebg}{rgb}{0.9,0.9,0.9}
+
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{4}
+\titleformat{\paragraph}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
 
 \addbibresource{cites.bib}
 \AtBeginBibliography{}

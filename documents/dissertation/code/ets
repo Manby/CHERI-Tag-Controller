@@ -1,0 +1,25 @@
+\begin{minted}[linenos=true,bgcolor=codebg,numberblanklines=true,showspaces=false,breaklines=true]{cpp}
+void setup(Decoder &decoder) override {
+    Cacheline root_line, leaf_line;
+    uint8_t root_byte;
+    bool no_leaves_set;
+
+    for (uint64_t rl = 0; rl < ROOT_TABLE_SIZE; rl += TAG_CACHE_LINE_SIZE) {
+        for (int rb = 0; rb < TAG_CACHE_LINE_SIZE; ++rb) {
+            root_byte = 0;
+            for (int rt = 0; rt < 8; ++rt) {
+                root_byte <<= 1;
+
+                // focus on this single root tag
+                decoder.getInitialTags((8*rl+8*rb+rt)*TAG_CACHE_LINE_SIZE*8, TAG_CACHE_LINE_SIZE*8, leaf_line);
+                memory.set(TAG_CACHE_LINE_SIZE*(8*rl+8*rb+rt) + ROOT_TABLE_SIZE, leaf_line);
+
+                no_leaves_set = isClear(leaf_line);
+                root_byte |= no_leaves_set ? 0 : 1;
+            }
+            root_line[rb] = root_byte;      // push the root byte into the line
+        }
+        memory.set(rl, root_line);          // insert the root line into the cache
+    }
+};
+\end{minted}

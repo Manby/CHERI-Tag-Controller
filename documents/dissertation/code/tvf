@@ -1,0 +1,29 @@
+\begin{minted}[linenos=true,bgcolor=codebg,numberblanklines=true,showspaces=false,breaklines=true]{cpp}
+int verify(Decoder &decoder, Controller &controller, size_t n) {
+    uint16_t tags, bufferTags;
+    int discrepancies = 0;
+
+    vector<memAccess> buffer(CHUNK_SIZE);
+    for (size_t at = 0; at < n; at += CHUNK_SIZE) {
+        size_t read = decoder.readLLCMisses(buffer, min(CHUNK_SIZE, n-at));
+
+        size_t i = 0;
+        for (size_t remaining = read; remaining > 0; --remaining) {
+            if (buffer[i].type == ACCESS_TYPE_READ) {
+                tags = controller.handleRead(buffer[i]);
+                bufferTags = buffer[i].tags;
+                if (tags != bufferTags) {
+                    cout << "TAGS DIFFER AT INSTRUCTION INDEX " << i << endl;
+                    cout << "ADDRESS:       " << buffer[i].addr << endl;
+                    cout << "TRACE TAGS:    " << bufferTags << endl;
+                    cout << "BASELINE TAGS: " << tags << endl;
+                    discrepancies++;
+                }
+            } else controller.handleWrite(buffer[i]);
+            ++i;
+        }
+    }
+    cout << "VERIFY: " << discrepancies << " total discrepancies" << endl;
+    return discrepancies;
+}
+\end{minted}

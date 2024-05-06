@@ -1,0 +1,23 @@
+\begin{minted}[linenos=true,bgcolor=codebg,numberblanklines=true,showspaces=false,breaklines=true]{cpp}
+int crossVerify(Controller &controller1, Controller &controller2) {
+    memAccess ax;
+    uint16_t tags1, tags2;
+    int discrepancies = 0;
+
+    for (uint64_t addr = 0; addr < MEMORY_SIZE; addr += 16) {
+        ax = memAccess(ACCESS_TYPE_READ, 64, 0, addr);
+
+        tags1 = controller1.handleRead(ax);
+        tags2 = controller2.handleRead(ax);
+
+        if (tags1 != tags2) {
+            cout << "TAGS DIFFER AT ADDRESS " << addr << endl;
+            cout << "CONTROLLER 1 TAGS: " << tags1 << endl;
+            cout << "CONTROLLER 2 TAGS: " << tags2 << endl;
+            discrepancies++;
+        }
+    }
+    cout << "CROSS-VERIFY: " << discrepancies << " total discrepancies" << endl;
+    return discrepancies;
+}
+\end{minted}

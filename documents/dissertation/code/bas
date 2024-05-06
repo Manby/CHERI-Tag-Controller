@@ -1,0 +1,33 @@
+\begin{minted}[linenos=true,bgcolor=codebg,numberblanklines=true,showspaces=false,breaklines=true]{cpp}
+class BaselineController : public FlatTableController {
+public:
+    BaselineController(gzFile output_trace, ofstream &output_log) : FlatTableController(output_trace, output_log) {}
+
+    uint16_t handleRead(memAccess ax) override {
+        pair<uint64_t, uint16_t> result;
+        uint64_t leaf_base_addr;
+        uint16_t leaf_cacheline_index;
+        Cacheline leaf_line;
+
+        result = translateToTagAddr(ax.addr);
+        leaf_base_addr = result.first;
+        leaf_cacheline_index = result.second;
+        leaf_line = memory.doRead(leaf_base_addr);
+        return getTags(leaf_line, leaf_cacheline_index);
+    }
+
+    void handleWrite(memAccess ax) override {
+        uint64_t leaf_base_addr;
+        uint16_t leaf_cacheline_index;
+        Cacheline leaf_line;
+
+        auto result = translateToTagAddr(ax.addr);
+        leaf_base_addr = result.first;
+        leaf_cacheline_index = result.second;
+
+        leaf_line = memory.doRead(leaf_base_addr);
+        modifyTags(leaf_line, leaf_cacheline_index, ax.tags);
+        memory.doWrite(leaf_base_addr, leaf_line);
+    }
+};
+\end{minted}

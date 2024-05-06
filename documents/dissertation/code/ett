@@ -1,0 +1,13 @@
+\begin{minted}[linenos=true,bgcolor=codebg,numberblanklines=true,showspaces=false,breaklines=true]{cpp}
+static std::pair<uint64_t, uint16_t> translateToLeafAddr(uint64_t addr_base) {
+    uint64_t leaf_base = (((addr_base / 128) >> 6) << 6) + ROOT_TABLE_SIZE;
+    uint16_t leaf_offset = ((addr_base>>6)*4) % 512;       // index into the tag cacheline
+    return {leaf_base, leaf_offset};
+}
+
+static std::pair<uint64_t, uint16_t> translateToRootAddr(uint64_t addr_base) {
+    uint64_t root_base = ((addr_base / 65536) >> 6) << 6;
+    uint16_t root_offset = ((addr_base>>6)*4 / 512) % 512; // index into the tag cacheline
+    return {root_base, root_offset};
+}
+\end{minted}

@@ -1,15 +1,18 @@
 \section{Implementation}
 
-This chapter describes the work I did for the project. It outlines the structure of the programs I developed, and goes in-depth into how exactly I implemented the described functionality.
+This chapter describes the work I did for the project. It outlines the structure of the programs I developed, and goes in-depth into how exactly I implemented the described functionality. It also details the process by which I designed my novel tag controller scheme.
 
-\subsection{Implementation Overview}
-The simulator consists of 3 main parts: the trace decoder, the tag controller algorithm, and the logical tag cache. Figure \ref{fig:wbx} shows how these parts fit into the project's pipeline of information flow.
+\subsection{Simulator}
+The simulator consists of 3 main parts: the trace decoder, the tag controller, and the simulated memory. Figure \ref{fig:wbx} shows how these parts fit into the project's pipeline of information flow.
 
-% what about the visualisation tool??? similar sentence for this?
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.5\textwidth]{wbx}
+	\caption{An explanation of how the three main parts of the tag controller simulator interact with the inputs and outputs, and with each other.}
+	\label{fig:wbx}
+\end{figure}
 
-[FIGURE WBX!!!]
-
-\subsection{Simulator Framework}
+\subsubsection{Simulator Framework}
 The simulator is a program with a command line interface defined in \texttt{main.cpp}. It allows a user to specify the following:
 \begin{itemize}
 	\item the name of the tag controller scheme to simulate
@@ -22,152 +25,200 @@ The simulator is a program with a command line interface defined in \texttt{main
 \end{itemize}
 \texttt{main.cpp} then parses these arguments, and opens the files specified. It creates an instance of a \texttt{Decoder} and has it decode the input files. It then creates an instance of a \texttt{Controller} of the specified scheme, and a \texttt{Simulator}. It then has the \texttt{Simulator} simulate the tag controller's execution when running under the workload of the input trace files.
 
-[FIG OOP!!!] (maybe)
-the oop-style view of which classes do what in main.cpp; it's the simulator framework section, after all
+%[FIG OOP!!!] (maybe)
+%the oop-style view of which classes do what in main.cpp; it's the simulator framework section, after all
 
-The \texttt{Simulator}'s job is simply to iterate through the decoded LLC misses, passing each to the controller's \texttt{handleMemoryAccess} method. This simulates the LLC streaming its sequence of misses to the tag controller in a hardware implementation.
+The \texttt{Simulator}'s job is simply to iterate through the decoded LLC misses, passing each to the controller's \texttt{handleRead} or \texttt{handleWrite} method, for reads and writes respectively. This emulates the LLC streaming its sequence of misses to the tag controller in a hardware implementation.
 
-[CODE SIM!!!]
-the simulator's only method
+\makeatletter
+\renewcommand{\ALG@name}{Code Snippet}
+\makeatother
+\begin{algorithm}[H]
+	\centering
+	\subimport{code}{sim}
+	\caption{\texttt{Simulator::processTrace}}
+	\label{code:sim}
+\end{algorithm}
 
 At the end, \texttt{main.cpp} reports the total number of LLC misses that were handled, and the total number of memory accesses the tag controller made. It also saves and closes the output file(s).
 
-\subsection{Trace Decoder}
+\subsubsection{Trace Decoder}
 The \texttt{Decoder}'s job is to retrieve information from the input trace files and provide it to whichever calling function requested it.
 
-On its construction, it is given the file objects for the two input trace files. It has two public methods, \texttt{readLLCMisses} and \texttt{getTags}.
+On its construction, it is given the file objects for the two input trace files. It has two public methods, \texttt{readLLCMisses} and \texttt{getInitialTags}.
 
-\texttt{readLLCMisses} is what \texttt{main.cpp} uses during setup to decode the sequence of LLC misses from the LLC miss input trace file. The file contains a sequence of structs with no padding between them. The structs have fields which begin at specific byte indexes, as detailed in figure \ref{fig:lfm}.
+\texttt{readLLCMisses} is what the \texttt{Simulator} uses to decode LLC misses from the LLC miss input trace file. The file contains a sequence of structs with no padding between them. The structs have fields which begin at specific byte indexes, as detailed in figure \ref{fig:lfm}.
 
-[FIGURE LFM!!!]
-The format of a struct in the LLC miss file (see obsidian log)
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.5\textwidth]{lfm}
+	\caption{The layout of an \texttt{llcMiss} struct.}
+	\label{fig:lfm}
+\end{figure}
 
 By using the correct format, the decoder reads out the fields of each LLC miss entry from the file, one at a time. For each entry, it constructs an \texttt{llcMiss} struct, which is defined in \texttt{trace.h}.
 
-The final step of this process is to \textit{furnish} the decoded \texttt{llcMiss} entry and convert it to a \texttt{memAccess} struct (also defined in \texttt{trace.h}) before writing that into the buffer. \textit{Furnishing} refers to a process of filling in partially-unknown information about the tags as best we can.\\
-To explain this, we must first understand some background about the source of the input trace files. The CHERI simulator that generated the input trace files worked like so:\\
-Instructions were decoded from the program binary, and issued to the simulated CPU. In the case of memory access instructions that resulted in LLC misses, an entry was made to the LLC miss trace file, detailing the miss. The entry attempts to describe the state of the four tag bits that were read (in the case of a read), or the state that we update the four tag bits to have (in the case of a write). Figure \ref{fig:csm} describes this process.
+The decoder uses zlib to read the compressed version of the trace files, rather than requiring the user to first decompress them. This saves them the pains of having to wait for the entire file to be decompressed rather than just the bytes that they are interested in, and of having to store decompressed files on disk whose filesize can be on the order of terabytes.
 
-[FIGURE CSM!!!]
-trace generation process
+The final step of this process is to \textit{furnish} the decoded \texttt{llcMiss} entry to convert it to a \texttt{memAccess} struct (also defined in \texttt{trace.h}) before writing that into the buffer. \textit{Furnishing} refers to a process of filling in partially-unknown information about the tags as best we can given the information we do have.\\
+To explain this, we must first understand some background about the source of the input trace files. The CHERI simulator that generated the input trace files worked like so:
 
-However, the information about the state of \textit{all} four tag bits is not necessarily known at the time the entry was logged. At this time, the simulator only had information about the tag that was read/written by the instruction that caused the miss, and information about the other tags that could be inferred from previous memory access instructions -- for example, suppose that a previous instruction had set tag 2 of a cacheline high. Suppose a later instruction reads tag 3 of this same cacheline; we cana know the value of tag 3 from the instruction's result, and we also know that tag 2 is still high, assuming no other instruction has caused it to change since the previous instruction set it. In the case of the other two tags in the cacheline, the simulator does not know what value they have at this time.\\
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{csm}
+	\caption{An illustration of how the LLC miss files were generated by the CHERI processor simulator.}
+	\label{fig:csm}
+\end{figure}
 
-[FIGURE CSE!!!]
-the example in pictures: show first access and resulting struct, then second access and resulting struct
+Instructions were decoded from the program binary, and issued to the simulated CPU. When processing memory access instructions that resulted in LLC misses, an entry was made to the LLC miss trace file, detailing the miss. The entry attempts to describe the state of the four tag bits that were read (in the case of a read), or the state that we update the four tag bits to have (in the case of a write). Figure \ref{fig:csm} describes this process.
 
-This lack of knowledge about particular tags is embedded in each entry in the LLC miss trace file, and upon being decoded, it is stored into the \texttt{tags\_known} field of the resulting \texttt{llcMiss} struct. This field is a bitmask indicating for which of the four tags we have definite information, and for which we do not.\\
+However, the information about the state of \textit{all} four tag bits is not necessarily known at the time the entry was logged. At this time, the simulator only has information about the tag that was read/written by the instruction that caused the miss, and information about the other tags that could be inferred from previous memory access instructions. Figure \ref{fig:cse} details an example of this. Initially, we know nothing about the sttate of the tags. Suppose that an instruction sets tag 2 of a cacheline to be high. Suppose further that a later instruction reads tag 3 of this same cacheline; we can know the value of tag 3 from the instruction's result, and we also know that tag 2 is still high, assuming no other instruction has caused it to change since the previous instruction set it. In the case of the other two tags in the cacheline, the simulator does not know what value they have at this time.\\
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{cse}
+	\caption{An example of how only partial information is known about the state of tags in the table.}
+	\label{fig:cse}
+\end{figure}
+
+This lack of knowledge about particular tags is embedded in each entry in the LLC miss trace file, and upon being decoded, it is stored into the \texttt{tags\_known} field of the resulting \texttt{llcMiss} struct. This field is a bitmask indicating for which of the four tags we have definite information, and for which we do not.
+
 To attempt to gain information for tags that we do not know about, we can refer to the initial state file that is associated with the LLC miss trace. This file contains information regarding what can be known about the \textit{initial state of the tags} in memory. In this file, there is an entry for each tag in the DRAM tag table. The \texttt{Decoder}'s private method \texttt{getInitialTag} is responsible for making an educated guess at the value of a tag of interest based on the initial state file's entry for that tag.\\
 The \texttt{getInitialTag} method first reads and decodes the entry for the tag of interest, obtaining two fields: a boolean named \texttt{tag} and a value of the enumerated type \texttt{initialAccessType}, which is defined in \texttt{trace.h}. The following table details how the \texttt{assumeTag} function generates a best-guess initial tag value from these two fields:
-\begin{center}
-\begin{tabular}{|l|c|p{7cm}|c|}
-	\hline
-	\textbf{Initial access type} & \texttt{Tag} & \textbf{Explanation} & \textbf{Assumed tag}\\
-	\hline
-	\texttt{INITIAL\_ACCESS\_TYPE\_CLOAD} & 0 & At some point, before the tag was modified, a capability-load instruction read this tag's value as a 0, so the tag was definitely initially 0. & 0\\
-	\hline
-	\texttt{INITIAL\_ACCESS\_TYPE\_CLOAD} & 1 & At some point, before the tag was modified, a capability-load instruction read this tag's value as a 1, so the tag was definitely initially 1. & 1\\
-	\hline
-	\texttt{INITIAL\_ACCESS\_TYPE\_CSTORE} & 0 & A capability-store instruction overwrote this tag's value to 0 before the initial value was discovered. We assume the capability-store did not change the value. & 0\\
-	\hline
-	\texttt{INITIAL\_ACCESS\_TYPE\_CSTORE} & 1 & A capability-store instruction overwrote this tag's value to 1 before the initial value was discovered. We assume the capability-store did not change the value. & 1\\
-	\hline
-	\texttt{INITIAL\_ACCESS\_TYPE\_LOAD} & 0/1 & No capability instructions accessed this tag so we have no concrete information, but it is likely that the value associated with this tag is non-capability data, and thus has its tag cleared. & 0\\
-	\hline
-	\texttt{INITIAL\_ACCESS\_TYPE\_STORE} & 0/1 & No capability instructions accessed this tag so we have no concrete information, but it is likely that the value associated with this tag is non-capability data, and thus has its tag cleared. & 0\\
-	\hline
-\end{tabular}
-\end{center}
+
+\begin{figure}[H]
+	\centering
+	\begin{tabular}{|l|c|p{7cm}|c|}
+		\hline
+		\textbf{Initial access type} & \texttt{Tag} & \textbf{Explanation} & \textbf{Assumed tag}\\
+		\hline
+		\texttt{INITIAL\_ACCESS\_TYPE\_CLOAD} & 0 & At some point, before the tag was modified, a capability-load instruction read this tag's value as a 0, so the tag was definitely initially 0. & 0\\
+		\hline
+		\texttt{INITIAL\_ACCESS\_TYPE\_CLOAD} & 1 & At some point, before the tag was modified, a capability-load instruction read this tag's value as a 1, so the tag was definitely initially 1. & 1\\
+		\hline
+		\texttt{INITIAL\_ACCESS\_TYPE\_CSTORE} & 0 & A capability-store instruction overwrote this tag's value to 0 before the initial value was discovered. We assume the capability-store did not change the value. & 0\\
+		\hline
+		\texttt{INITIAL\_ACCESS\_TYPE\_CSTORE} & 1 & A capability-store instruction overwrote this tag's value to 1 before the initial value was discovered. We assume the capability-store did not change the value. & 1\\
+		\hline
+		\texttt{INITIAL\_ACCESS\_TYPE\_LOAD} & 0/1 & No capability instructions accessed this tag so we have no concrete information, but it is likely that the value associated with this tag is non-capability data, and thus has its tag cleared. & 0\\
+		\hline
+		\texttt{INITIAL\_ACCESS\_TYPE\_STORE} & 0/1 & No capability instructions accessed this tag so we have no concrete information, but it is likely that the value associated with this tag is non-capability data, and thus has its tag cleared. & 0\\
+		\hline
+	\end{tabular}
+	\caption{The rubric for assuming the value of an unknown tag.}
+	\label{fig:tar}
+\end{figure}
+
 Putting it all together, the \texttt{furnish} method converts decoded \texttt{llcMiss} structs into \texttt{memAccess} structs by using the \texttt{getInitialTag} method to fill in gaps. The \texttt{getInitialTag} method in turn uses the above assumption scheme defined by \texttt{assumeTag} to make an educated guess at what the tag previously was, though at times it must make assumptions due to lack of information.
 
-The \texttt{Decoder} class also has a \texttt{getInitialTags} method that produces an entire cacheline's worth of initial values of tags in the tag table. It uses the same methods, and the same assumptions for making educated guesses, as the \texttt{getInitialTag} method does. It is used by \texttt{Controllers} when they initialise the state of their \texttt{Cache}.\\
+The \texttt{Decoder} class also has a \texttt{getInitialTags} method that produces an entire cacheline's worth of initial values of tags in the tag table. It uses the same methods, and the same assumptions for making educated guesses, as the \texttt{getInitialTag} method does. It is used by \texttt{Controller}s when they initialise the state of their \texttt{Memory}.\\
 This method is more efficient than simply calling \texttt{getInitialTag} 512 times as it performs a single disk read to retrieve all 512 relevant entries from the initial state file at once. It also provides a more useful interface to the calling methods, as they operate on cacheline-granularity rather than bit-granularity.
 
-\subsection{Tag Cache}
-\texttt{Cache.h} defines the \texttt{Cache} class, which represents a \textit{logical} cache. By logical, I mean that it does not simulate the operations of a cache such as cacheline eviction and replacement -- that is ChampSim's job -- but instead it provides an interface to the tag controller that mimics the interface of a real cache, and performs other duties important to the simulation.
-
-This class is responsible for the following:
+\subsubsection{Simulated Memory}
+\texttt{Memory.h} defines the \texttt{Memory} class, which represents the tag table stored in memory. This class is responsible for the following:
 \begin{itemize}
-	\item Providing an interface to the tag controller that mimics a real cache
+	\item Providing an interface to the tag controller, allowing it to read from and write to the state of the tag table
+	\item Keeping track of the state of the tag table as the simulation progresses
 	\item Logging all memory accesses that the tag controller makes
-	\item Keeping track of the state of the DRAM tag table as the simulation progresses
 \end{itemize}
+The class does \textbf{not} keep track of value data -- it only records tag data. This simulation is not concerned with values; only tags.
 
-The \texttt{Cache} keeps track of the state of each cacheline in simulated memory by using a \texttt{std::map}. This data structure is appropriate for two reasons: 1) it has $O(1)$ lookup time, which is key for providing fast simulation runtimes due to the frequency of tag table accesses, and 2) it has an ordering, meaning that when we dump the state of the tag table to the output log, we can guarantee that we traverse the bytes in order.
+The \texttt{Memory} keeps track of the state of each cacheline in the tag table by using a \texttt{std::map} that maps simulated physical addresses to \texttt{Cacheline}s. A \texttt{std::map} is an appropriate data structure for two reasons: 1) it has $O(1)$ lookup time, which is key for providing fast simulation runtimes due to the frequency of tag table accesses and the large size of the table, and 2) it maintains a total ordering of its entries over their keys, meaning that when we dump the state of the tag table to the output log, we can guarantee that we traverse the bytes in order of address. An array would also provide these properties, but in cases where we might want to divide the table into chunks that are spread across the entire physical address space, an array would either need to reserve space that spans this entire range, or have a programmer-defined translation scheme for translating addresses into array indices. Reserving space for the entire physical address space is wasteful as only a very small fraction of it would be used, and a programmer-defined translation scheme adds unnecessary complications for the programmer. On the other hand, a map only needs to have as many entries as the number of cachelines that the tag table can store, and no extra translation scheme needs to be defined.\\
+A \texttt{Cacheline} is a C++ alias for the type \texttt{std::array<uint8\_t, 64>}, representing the 64 bytes that a real cacheline has.
 
-The \texttt{Cache} provides a \texttt{doRead} and \texttt{doWrite} method to the tag controller, allowing it to read from and write to the simulated tag table in memory. From the point of view of the controller, the logical cache \textit{always hits}. There is no need to determine whether the cache would actually hit or miss inside \textit{this} simulation -- the purpose of this simulation is to determine the \textit{sequence of \textbf{memory addresses} that the tag controller attempts to access} when running under the chosen workload, which is independent of whether or not the cache hits or misses, thus the control flow will always be correct, and therefore the output trace produced will still be an accurate trace of the sequence of memory address accessed by a real controller.\\
-After we produce the access trace, we can feed it into ChampSim. ChampSim then accurately simulates the physical cache, simulating which lines would hit, which would miss, which would be evicted, and so on, all the while recording statistics such as access count and hit count.
+The \texttt{Memory} provides a \texttt{doRead} method and a \texttt{doWrite} method to the tag controller, allowing it to read and write cachelines to the simulated tag table. It is important to remember that this simulation is not concerned with whether the tag cache would hit or miss when accessing memory. The purpose of this simulation is to determine the \textit{\textbf{sequence of memory addresses} that the tag controller attempts to access} when running under the chosen workload, which is independent of whether or not the cache hits or misses, thus the control flow of the tag controller's algorithm will always be accurate to a real run, and therefore the output trace produced will still be an accurate trace of the sequence of memory address accessed by a real controller.\\
+After this simulator produces the access trace, we can feed it into ChampSim. ChampSim then accurately simulates the physical cache, simulating which lines would hit, which would miss, which would be evicted, and so on, all the while recording statistics such as access count and hit count.
 
-[FIGURE CCH!!!] (maybe replace with the goodnotes thing, and refer back to it)
- details how information regarding memory accesses flows through the simulations, and which parts are responsible for simulating which functionality of the real system.
+Each time the tag controller needs to read a tag cacheline from memory, we want to create an entry into the output trace reflecting this. As well as allowing the tag controller to interact with the state of the tag table, the \texttt{doRead} and \texttt{doWrite} methods also take the responsibility of writing the addresses accessed to the output trace. They do this by calling the private \texttt{traceRead} and \texttt{traceWrite} methods, which simply append a populated \texttt{champsimInstr} struct to the file, building up a trace file that ChampSim can parse.
 
-Each time the tag controller needs to read a tag cacheline from memory, we want to create an entry into the output trace reflecting this. As well as allowing the tag controller to interact with the state of the tag table, the \texttt{doRead} and \texttt{doWrite} methods also take the responsibility of logging the addresses accessed to the output log. They do this by calling the private \texttt{logRead} and \texttt{logWrite} methods, which simply append a populated \texttt{champsimInstr} struct to the file, building up a trace file that ChampSim can read.
+There are also cases where we want to read from or update the state of the tag table without writing an entry to the output trace file, which I mention later. The \texttt{peek} and \texttt{set} methods allow this `silent' interaction with the tag table.
 
-There are also cases where we want to read from or update the state of the tag table without writing an entry to the output trace file. I mention these cases later. The \texttt{peek} and \texttt{set} methods allow this `silent' interaction with the tag table.
+The \texttt{Memory} class has two getter methods -- \texttt{getNumAccesses} and \texttt{getPrevLogged}. The former returns the number of entries made into the output trace file. The latter returns a vector of all entries that have been made -- this is used when testing.\\
+The class also has a method \texttt{dump\_table}, which writes each bit of the current state of the tag table into the tag table state output log file.
 
-The \texttt{Cache} class has two getter methods -- \texttt{getNumAccesses} and \texttt{getPrevLogged}. The former returns the number of entries made into the output trace file. The latter returns a vector of all entries that have been made -- this is used when testing.\\
-The class also has a method \texttt{dump}, which writes each and every bit of the current state of the tag table into the tag table state output log file.
+\subsubsection{Tag Controller}
+\begin{algorithm}[H]
+	\centering
+	\subimport{code}{ctr}
+	\caption{\texttt{Controller} class}
+	\label{code:ctr}
+\end{algorithm}
 
-\subsection{Tag Controller}
-[CODE CTR!!!]
-controller.h class
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{cml}
+	\caption{The UML diagram detailing the inheritance of the tag controller classes.}
+	\label{fig:cml}
+\end{figure}
 
-[FIGURE CML!!!]
-uml for all tag controller inheritance
+A tag controller is implemented as a concrete class that derives from the abstract \texttt{Controller} class. Each tag controller has a \texttt{Memory}, to which it sends requests during its operation.
 
-A tag controller is implemented as a class that derives from the abstract \texttt{Controller} class. Each tag controller has a (logical) \texttt{Cache}, which it sends requests to during its operation. This logical `has-a' relationship exactly matches the memory system model described in the preparation section (see figure \ref{fig:tca}).
+Being abstract, this class also details the methods that a concrete tag controller must implement: \texttt{setup}, \texttt{handleRead} and \texttt{handleWrite}.\\
+The \texttt{setup} method is to be called immediately after the \texttt{Controller} instance is constructed, so that the state of its \texttt{Memory} is correctly initialised. This is done with help from the passed \texttt{Decoder}, which reads from the initial tag table state input file. This method is abstract because different tag controllers are part of different schemes, and different schemes have different tag table layouts (the Morello Project's flat table layout from the \textit{Efficient Tagged Memory}'s hierarchical table layout, for instance), thus the algorithm to initialise them will differ.\\
+The \texttt{handleRead} and \texttt{handleWrite} methods implement the algorithms that the tag controller follows when handling LLC misses. As this simulator is only concerned with tag data and not value data, a concrete implementation of this method only needs to perform the tag table accesses of the algorithm, and not the value access, or the merging of values with tags.
 
-Being abstract, this class also details the methods that a concrete tag controller must implement -- it must have a \texttt{setupCache} method, and \texttt{handleMemoryAccess} method.\\
-The \texttt{setupCache} method is to be called immediately after the \texttt{Controller} instance is constructed, so that the state of its cache is correctly initialised, with help from the passed \texttt{Decoder} that reads from the initial tag table state input file. This method is abstract because different tag controllers are part of different schemes, and different schemes have different tag table layouts (the Morello Project's flat table layout from the \textit{Efficient Tagged Memory}'s hierarchical table layout, for instance), thus the algorithm to initialise them will differ.\\
-The \texttt{handleMemoryAccess} method implements the algorithms that the tag controller follows when handling LLC misses. As this simulator is only concerned with tags and not actual value data, a concrete implementation of this method only needs to perform the tag access part of the algorithm, and not the value access or the merging of values with tags.
+\paragraph{Flat Table Controllers}
+\texttt{FlatTableController.h} defines an abstract class \texttt{FlatTableController} that extends \texttt{Controller}. This class partially defines a specific type of tag controller -- those that use a flat table, such as the controllers from the basic scheme and the Morello Project scheme. Controllers of this type have two things in common: how logical addresses are translated into actual ones, and how the tag cache should be initialised at the beginning of a simulation.
 
-The \texttt{Controller} class also defines three methods that allow external callers to interact with the state of the tag cache. These methods are simply proxies to public methods of its \texttt{Cache}.
+\begin{algorithm}[H]
+	\centering
+	\subimport{code}{flt}
+	\caption{\texttt{FlatTableController::translateToTagAddr}}
+	\label{code:flt}
+\end{algorithm}
 
-\subsubsection{Flat Table Controllers}
-\texttt{FlatTableController.h} defines an abstract class \texttt{FlatTableController} that extends \texttt{Controller}. This class partially defines a specific type of tag controller -- those that use a flat table, such as the controllers from the basic scheme and the Morello Project scheme. Controllers of this type have two things in common: how logical addresses are translated into actual ones, and how the tag cache should be initialised at the beginning of a simulation.\\
 The translation from a logical cacheline base address to the corresponding actual tag cacheline base address is detailed in equation \ref{eq:atcas}. \texttt{FlatTableController}'s \texttt{translateToTagAddr} method does exactly this (see listing \ref{code:flt}).\\
 For a flat table controller, the tag cache is initialised by simply iterating across the entire initial tag table state and populating the cache's cachelines.
 
-[code FLT!!!]
-code for translateToTagAddr
+By implementing a single abstract class from which several other classes can inherit instead of duplicating the functionality across several base classes, we reduce the size of the codebase and increase maintainability due to only having to change a single implementation when changes are necessary. It also makes it easier for an architect to implement their own flat table controller, as they already have the abstract class as a starting point. Additionally, it becomes true that by testing this functionality for a single base class, we test it for all of them simultaneously.
 
-By implementing a single abstract class from which several other classes can inherit instead of duplicating the functionality across several base classes, I reduce the size of the codebase and increase maintainability due to only having to change a single implementation when changes are necessary. It also makes it easier for an architect to implement their own flat table controller, as they already have the abstract class as a starting point. Additionally, it becomes true that by testing this functionality for a single base class, I test it for all of them simultaneously.
-
-\subsubsection{Basic Scheme}
+\paragraph{Basic Scheme}
 \texttt{BaselineController.h} defines a concrete class \texttt{BaselineController} that implements the tag controller from the basic scheme. The class inherits from \texttt{FlatTableController}.
 
-The implementation of \texttt{handleMemoryAccess}, the final remaining abstract method to be implemented, is very simple, and it is clear how the code directly corresponds to the algorithms from figures \ref{fig:bar} and \ref{fig:baw}.
+The implementations of \texttt{handleRead} and \texttt{handleWrite} are very simple, and it is clear how the code directly corresponds to the algorithms from figures \ref{fig:bar} and \ref{fig:baw}.
 
-[code BAS!!!]
-code for baseline controller
+\begin{algorithm}[H]
+	\centering
+	\subimport{code}{bas}
+	\caption{\texttt{BaselineController} class}
+	\label{code:bas}
+\end{algorithm}
 
-\subsubsection{\textit{Efficient Tagged Memory}'s Hierarchical Scheme}
+\paragraph{\textit{Efficient Tagged Memory}'s Hierarchical Scheme}
 \texttt{ETMController.h} defines a concrete class \texttt{ETMController} that implements the tag controller from the scheme described in \textit{Efficient Tagged Memory}.
 
-This class's \texttt{setupCache} method instantiates the \textit{leaf} table in the same way that a flat table controller instantiates its table. Whilst it does this however, it also populates its \textit{root} table. Each time a cacheline of tags is placed into the leaf table, we keep track of whether or not the cacheline contained any set tags, recording a 1 in the current byte if there were any, and a 0 if not. After processing 8 leaf table cachelines, we push the current byte into the current cacheline. After pushing 64 bytes, we set the now-completed cacheline in the root table.
+This class's \texttt{setup} method instantiates the \textit{leaf} table in the same way that a flat table controller instantiates its table. Whilst it does this however, it also populates its \textit{root} table, byte by byte. Each time a cacheline of tags is placed into the leaf table, we keep track of whether or not the cacheline contained any set tags, recording a 1 in the current byte if there were any, and a 0 if not. After processing 8 leaf table cachelines, we push the current byte into the current cacheline. After pushing 64 bytes, we \texttt{set} the now-completed cacheline in the root table.
 
-[code ETS!!!]
-etm's setupCache
+\begin{algorithm}[H]
+	\centering
+	\subimport{code}{ets}
+	\caption{\texttt{ETMController::setup}}
+	\label{code:ets}
+\end{algorithm}
 
-This class defines two auxiliary functions, \texttt{translateToLeafAddr}, and \texttt{translateToRootAddr}. Just as \texttt{FlatTableController}'s \texttt{translateToTagAddr} implemented the appropriate equation from the Preparation chapter to translate a value cacheline's logical base address to the corresponding tag cacheline's actual base address, \texttt{translateToLeafAddr} implements equation \ref{eq:altcae} to translate a value cacheline's logical base address to the corresponding tag cacheline's actual base address in the \textit{leaf table}. Similarly, \texttt{translateToRootAddr} implements equation \ref{eq:artcae} to translate that logical base address to the actual address of the corresponding cacheline in the root table instead -- that is the base address of the line in the root table that contains the root bit whose scope covers the corresponding leaf table line.
+This class defines two auxiliary functions, \texttt{translateToLeafAddr}, and \texttt{translateToRootAddr}. Just as \texttt{FlatTableController}'s \texttt{translateToTagAddr} implemented the appropriate equation from the Preparation chapter to translate a value cacheline's logical base address to the corresponding tag cacheline's actual base address, \texttt{translateToLeafAddr} implements equation \ref{eq:altcae} to translate a value cacheline's logical base address to the corresponding tag cacheline's actual base address in the \textit{leaf table}. Similarly, \texttt{translateToRootAddr} implements equation \ref{eq:artcae} to translate that logical base address to the actual base address of the corresponding cacheline in the root table instead -- that is the base address of the cacheline in the root table that contains the root bit whose scope covers the corresponding leaf table line.
 
-[code ETT!!!]
-the two etm aux methods
+\begin{algorithm}[H]
+	\centering
+	\subimport{code}{ett}
+	\caption{\texttt{ETMController::translateToLeafAddr} and \texttt{ETMController::translateToRootAddr}}
+	\label{code:ett}
+\end{algorithm}
 
-The implementation of \texttt{handleMemoryAccess} is more complex than that of the basic tag controller, but once again the code directly corresponds to the algorithms from the appropriate figures (\ref{fig:etr} and \ref{fig:etw}).
+The implementations of \texttt{handleRead} and \texttt{handleWrite} are more complex than that of the basic tag controller, but once again the code directly corresponds to the algorithms from the appropriate figures (\ref{fig:etr} and \ref{fig:etw}).
 
-[probably put the implementation in an appendix, and refer to it!!!]
+%[probably put the implementation in an appendix, and refer to it!!!]
 
-\subsubsection{The Morello Project Scheme}
+\paragraph{The Morello Project Scheme}
 \texttt{MorelloController.h} defines a concrete class \texttt{MorelloController} that implements the tag controller from the Morello Project scheme. The class inherits from \texttt{FlatTableController}.
 
-The Morello project tag controller implementation is a special case. As mentioned, the Morello Project's microarchitecture uses two distinct caches. My program handles this by producing the access logs for the two caches in two separate simulations.
-On invoking the program, the user specifies whether they want to simulate the zero cache, or the non-zero cache. The simulator will then run and produce an output trace file that logs the accesses made only to the specified cache. For example, if the user specifies that they want to simulate the non-zero cache, then the output trace produced will detail all accesses made to \textit{non-zero} tag cachelines, and not any to \textit{zero} cachelines.\\
+The Morello project tag controller implementation is a special case. As mentioned in the Preparation chapter, the Morello Project's microarchitecture uses two distinct caches. My program handles this by producing the access logs for the two caches in two separate simulations.
+On invoking the program, the user specifies whether they want to simulate the zero cache, or the non-zero cache. The simulator will then run and produce an output trace file that logs \textit{only the accesses made to the specified cache}. For example, if the user specifies that they want to simulate the non-zero cache, then the output trace produced will detail all accesses made to \textit{non-zero} tag cachelines, and not any to \textit{zero} cachelines.\\
 This way, the simulation framework does not need to be adapted to handle multiple caches at once, and the output log can still be passed straight to ChampSim to simulate the chosen cache.
 
-Now though, this means that the algorithms that we impelment must change. In simulation, we want the tag cache to only log a memory access if the line the controller is accessing is a line that \textit{would be held in the cache we are simulating}. To do this, we need a way for the controller's algorithm to know the state of the cacheline before it decides whether or not to log the memory access. The \texttt{Cache}'s \texttt{doRead} method is not enough, as it has a side-effect of logging the memory access to the output trace file when retrieving the cacheline, which is a problem if the line happens to be one that we do not want to log the access of. That is, with this method, we can only know if we actually want to log the access \textit{after} we have called the method and consequently already logged the access.\\
-The solution is to instead use the \texttt{Cache}'s \texttt{peek} method. With this method we can see the state of the cacheline without logging the access, allowing us to decide whether or not to log the access \textit{after} examining the line's state.\\
-Similarly, on updating a tag, we might not necessarily want to log the write memory access, but it is important that we update the state of the tag in the simulation, otherwise the algorithm might later read stale data and make decisions that are not accurate to a real world run of the controller, where the value did in fact change in memory. The \texttt{Cache}'s \texttt{set} method can be used to update the state of a cacheline without logging a write memory access to the output trace.\\
+Now though, this means that the algorithms that we impelment must change. In simulation, we want the \texttt{Memory} to only log a memory access to the output trace if the line that the controller is accessing is a line that \textit{would be held in the cache we are simulating}. To do this, we need a way for the controller's algorithm to know the state of the cacheline before it decides whether or not to log the memory access. The \texttt{Memory}'s \texttt{doRead} would tell the controller the state of the cacheline, but as it does this, it has the side-effect of logging the memory access to the output trace file, which is a problem if the line happens to be one that we do not want to log the access of. That is, with this method, we can only know if we actually want to log the access \textit{after} we have called the method and consequently already logged the access.\\
+The solution is to instead use the \texttt{Memory}'s \texttt{peek} method. With this method the controller can see the state of the cacheline without logging the access, allowing it to decide whether or not to log the access \textit{after} examining the line's state, and only doing so if it matches the cache being simulated.\\
+Similarly, on updating a tag, we might not necessarily want to log the write memory access, but it is important that we update the state of the tag in the simulation, otherwise the algorithm might later read stale data and make decisions that are not accurate to a real world run of the controller, where the value would have changed in memory. The \texttt{Memory}'s \texttt{set} method can be used to update the state of a cacheline without logging a write memory access to the output trace.\\
 Figures \ref{fig:mrr} and \ref{fig:mrw} detail the new algorithms we must implement. They contain new `pseudo-memory access operations' that correspond to \texttt{peek}ing and \texttt{set}ting. These operations are purely for simulation control flow purposes and do not correspond directly to real operations that a physical tag controller would perform.
 
 The algorithm for reading is as follows:
@@ -186,13 +237,14 @@ The algorithm for writing is as follows:
 	\label{fig:mrw}
 \end{figure}
 
-The implementation of \texttt{handleMemoryAccess} implements these algorithms. Lines !!! show that after having \texttt{peek}ed at the state of the cacheline, we only actually log the memory access if the state of the cacheline matches with the cache that we are simulating. Lines !!! show that depending on whether or not we want to record the memory access or simply update the simulation's state, we call either \texttt{doRead} or \texttt{set}.
+The implementations of \texttt{handleRead} and \texttt{handleWrite} implement these algorithms.
+%Lines !!! show that after having \texttt{peek}ed at the state of the cacheline, we only actually log the memory access if the state of the cacheline matches the cache that we are simulating. Lines !!! show that depending on whether or not we want to record the memory access or simply update the simulation's state, we call either \texttt{doRead} or \texttt{set}.
 
 \subsection{Logging}
 
 \subsubsection{Logging Tag Table State}
-Another job of the \texttt{Simulator} class is to stimulate the \texttt{Cache}, via the \texttt{Controller}'s proxy method, to dump its tag table state once a log point is reached.\\
-When it does this, it reports the index of the most recent memory access request. These indices are used later by the instrumented version of ChampSim, for we also want ChampSim to log the state of the tag cache at this same point of program execution. Therefore, by keeping track of the index of the memory access immediately prior to the log point, when ChampSim runs its simulation of the physical cache, it can know that once it reaches the memory access with an equal index, it must dump the cache's current state.
+Another job of the \texttt{Simulator} class is to stimulate the \texttt{Memory}, via the \texttt{Controller}'s proxy method, to dump its tag table state once a log point is reached.\\
+When ChampSim parses our output trace, we want it to log the state of the tag cache at this same point of program execution. However, ChampSim's unit of work is a memory accesses, not an LLC miss. As there may be more than one memory access per the handling of a single LLC miss, we must let ChampSim know \textit{after which memory access} (as opposed to after which LLC miss) it should dump its state. Therefore, after the \texttt{Simulator} stimulates the memory, it also reports the index of the most recent memory access request, which will later also be given to ChampSim for this purpose.
 
 \subsubsection{Adding Logging to ChampSim for Tag Cache State}
 To add cache state logging support to ChampSim, I had to modify three files.
@@ -206,8 +258,34 @@ In \texttt{main.cc} I added to option to specify two extra command line argument
 The \texttt{main} function passes this information to the \texttt{champsim::main} function defined in \texttt{champsim.cc}.\\
 This function was then modified to check after each phase of processing if it has reached a log point. If it has, it dumps all of the addresses currently resident in the simulated cache into the output log file.
 
+\subsection{Verification}
+
+\subsubsection{Microbenchmarks -- Unit Tests}
+I implemented some unit tests to test the correctness of the address translations and access sequences of some of the concrete tag controller implementations. They have the controller handle a single access, and then analyse the sequence of addresses that the controller made in response, asserting that the addresses accessed match what was expected. These microbenchmarks were particularly useful to debug the controllers as I implemented them, as their precision highlighted exactly where the issues lay.
+
+\subsubsection{Macrobenchmark -- Trace Verifier}
+The input trace files usefully contain information about the results of reads made to the DRAM tag table during the workload simulation. This allows us to cross-reference the results of reads that our implemented tag controllers produce with those found in the trace file. The trace files contain hundreds of millions (if not more) of read instructions, so if of all of the read results match, then we can say with extreme confidence that our implementation of the tag controller is correct. As part of my project I developed a program that allows the user to provide a reference workload and verify the correctness of a tag controller in this way.
+
+\begin{algorithm}[H]
+	\centering
+	\subimport{code}{tvf}
+	\caption{\texttt{verify.cpp}'s \texttt{verify} function}
+	\label{code:tvf}
+\end{algorithm}
+
+\subsubsection{Macrobenchmark -- Cross-Verifier}
+The program also allows the user to specify a pair of tag controllers, and compare them against each other. It does this by taking an input workload, simulating both of them handling the desired number of LLC misses, and calling \texttt{handleRead} on every address in physical memory, ensuring that all tag state is funcitonally equivalent. As the controllers handle the LLC misses, their \texttt{Memory}s' tag table states will update according to the implementations of their algorithms. If at the end the states of all tags in the table match, the user can say with extreme confidence that the inputs, outputs, and logical state transitions of the two tag controller implementations are the same.\\
+With this program, I also implemented two dummy controllers, \texttt{DummyZeroController} and \texttt{DummyOneController}, which always return zeroes or ones from their \texttt{handleRead} methods respectively. By comparing a scheme to either of these, a user can confirm whether or not their controller is only reading out zeroes or ones, which can be useful for debugging purposes.
+
+\begin{algorithm}[H]
+	\centering
+	\subimport{code}{tcv}
+	\caption{\texttt{verify.cpp}'s \texttt{crossVerify} function}
+	\label{code:tcv}
+\end{algorithm}
+
 \subsection{Visualisation Tool}
-With the ability to grab the state of the tag table and tag cache at any point in the execution of a workload, we can now create a tool to visualise the this state, effectively showing us a `snapshot' of the tag state at that moment in execution.
+With the ability to capture the state of the tag table and tag cache at any point in the execution of a workload, we can now create a tool to visualise the this state, effectively showing us a `snapshot' of the tag state at that moment in execution.
 
 \texttt{visualiser.py} combines the simulation and the visualisation into one program. It allows the user to specify the following command line arguments:
 \begin{itemize}
@@ -219,8 +297,8 @@ With the ability to grab the state of the tag table and tag cache at any point i
 	\item the string prefix of the output image filenames
 \end{itemize}
 
-[FIGURE VIS!!!]
-the white-box implementation of the visualiser (remember that visualiser and everything else is inside the overarching box called visualisation tool)
+% [FIGURE VIS!!!]
+% the white-box implementation of the visualiser (remember that visualiser and everything else is inside the overarching box called visualisation tool)
 
 The following describes the program's sequence of events:
 \begin{enumerate}
@@ -229,14 +307,226 @@ The following describes the program's sequence of events:
 	\item The standard output of the tag controller simulation is read, collecting the reported memory accesses after which ChampSim must dump the state of the tag cache.
 	\item The instrumented version of ChampSim is invoked, being passed the required arguments.
 	\item ChampSim simulates the operation of the tag cache, and logs the state of the cache at the desired points. It then finishes, reporting its usual metrics to the user.
-	\item Now having the logged states of both the tag table and the tag cache, the program finally generates a PNG showing visually this state. One PNG is generated for each log point.
+	\item Now having the logged states of both the tag table and the tag cache, the program finally generates a PNG that visualises this state. One PNG is generated for each log point.
 \end{enumerate}
 
-[FIGURES from visualisation!!!]
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1\textwidth]{vetm}
+	\caption{A snapshot of the tag table when running the \textit{Efficient Tagged Memory} scheme.}
+	\label{fig:vetm}
+\end{figure}
 
-[probably a legend too!!!]
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{vetz}
+	\caption{A closer look at the root table.}
+	\label{fig:vetz}
+\end{figure}
 
-\subsection{Testing}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1\textwidth]{vetl}
+	\caption{A closer look at the leaf table.}
+	\label{fig:vetl}
+\end{figure}
+
+%[probably a legend too!!!]
+
+\subsection{Phoenix -- A Novel Scheme}
+\subsubsection{The Motivation}
+After confirming the correctness of my implementations of the above three algorithms by using the verifiers, I used the visualisation tool to inspect the state of the tag table and cache during a simulation of the \textit{Efficient Tagged Memory} scheme.
+%(!!! which workload, logpoint(s), etc)
+
+I noticed that while some tags were set, there were still huge portions of the table that contained no set tags. In a physical system, these correspond to kilobytes of memory that only contains zeroes. Seeing this suggested two things to me:\\
+The first was that there might be a more efficient way to store all of these zeroes in the tag cache. \textit{Efficient Tagged Memory}'s root table already does a very good job of representing the zeroes succinctly, but there may still be opportunities to increase the cacheability of the tag table in this respect.\\
+The second was that there might be an opportunity to free these empty regions to a DRAM allocator, if the system were running under a hypervisor with such a mechanism. The above three schemes have no means for doing this.
+
+\subsubsection{The Intuition}
+\paragraph{Reference Counters}
+A thought that initially came to my mind to increase the cacheability of the tag table was to increase the scope of the root bits to more than just a single cacheline of leaf tags. Doing this would mean that we could contain a larger portion of the tag table in the tag cache, as each zero root bit would represent a larger section of the cache.\\
+Increasing the scope significantly might also be a start to dynamic DRAM allocation. Current schemes have no notion of how much physical space they currently require for their tag tables, but A scheme that divides its tag table up into large blocks could allocate and free those blocks on-demand. If an entire block is unused, the space it is consuming could be freed back to the hypervisor's memory pool, to be used by another guest OS. Once the space is required again, the guest OS could request more physical memory.
+
+Increasing the scope of the root bits brings problems, however. One problem is that on writing zeroes into the leaf table, we must check the entire group of tags covered by the corresponding root bit to see if all tags are now zero, so as we appropriately zero the root bit if so. A larger group means more cachelines must be retrieved during this process, increasing latency, polluting the cache, and increasing the chance of a cache miss.
+
+A potential solution to this problem is to use a counter to keep track of the number of tags that are non-zero. Consider a scheme where each group of leaf tags has its own counter, and all of the counters are stored in a table. On setting tags, we increment the counter for that group, and on clearing them, we decrement it. Once the counter reaches zero, we know that all tags in the group must be zeroes, so we can clear the root bit without having to do additional checks. Lines from the counter table could also be held in the tag cache, consuming relatively small amounts of precious cache space, much like the root cachelines.\\
+It is actually more appropriate to instead count the number of non-zero cachelines, instead of non-zero tags. This reduces how frequently we need to update the counter, helping to keep bus traffic down. Checking if the whole cacheline is non-zero instead of just the tag(s) the we update brings no additional memory accesses, as when serving requests to the LLC, we must access the entire cacheline anyway to fulfil the request.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.7\textwidth]{cnt}
+	\caption{An illustration of the table of tag counters.}
+	\label{fig:cnt}
+\end{figure}
+
+Suppose that we have $M$ bytes of physical memory in which value data is stored. Let $k$ be the number of tag cachelines in each counter group.\\
+\begin{align}
+	\frac{M \text{ value data bytes}}{16 \text{ value data bytes per tag bit}} &= \frac{M}{16} \text{ tag bits}\\
+	\frac{\frac{M}{16} \text{ tag bits}}{512 \text{ tag bits per tag cacheline}} &= \frac{M}{8192} \text{ tag cachelines}\\
+	\frac{\frac{M}{8192} \text{ tag cachelines}}{k \text{ tag cachelines per group}} &= \frac{M}{8192k} \text{ tag groups, and counters}
+\end{align}
+Each counter will require at least $\text{ceil}(\lg(k + 1))$ bits to keep track of it, as it must be able to represent all numbers in the range $[0, k]$.\\
+Therefore the minimum extra space required by the table of counters will be $\frac{M}{8192k} \times \frac{\text{ceil}(\lg(k + 1))}{8}$ bytes. In practice, padding would be used to keep the counters from crossing word boundaries, consequently increasing the size of the table.
+
+We must now choose an appropriate value for $k$, the group size. To do this, I used the visualisation tool to investigate the state of the tag table for some workloads.
+%(!!! which workloads)
+I noticed that the set tags tended to be focused into pages. That is, they tended to have either no tags set, or many tags set; relatively few pages had only a handful of tags set (see figure \ref{fig:vtf}). This suggested to me that setting the group size to equal the size of a page of tags, 4096 bytes (64 cachelines), was a good choice. This way, the majority of the counters will be zero, and the rest will mostly be high numbers. The number is not too small so as to result in there being too many counters, requiring too much extra space and too much additional cache pollution. The number is also not too large so as to merge freeable regions of zeroes with regions containing tags, disallowing us from freeing the entire group. That is, due to the tags being concentrated amongst a small number of pages, we can still free most of the space being used to hold zero tags without having to use smaller granules.\\
+Another advantage of choosing this number is that it is likely that the dynamic DRAM allocator operates on page-granularity, making the interface clean.
+
+%[FIG VTF!!!]
+%visualisation of tag focusing
+
+So, let $k = 64$. As an exapmle, suppose that $M = 4$GiB:\\
+We would have $\frac{2^{32}}{8192 \times 64} = 8192$ groups of tags, and also this many counters.\\
+Each counter would require at least $\text{ceil}(\lg(64 + 1)) = 7$ bits to keep track of it.\\
+Therefore the minimum extra space required by the table of counters will be $8192 \times \frac{7}{8} = 7186 = 7$KiB.
+
+This is a somewhat significant space overhead, but it comes with the ability to now free pages to DRAM. By freeing only 2 pages, we can reduce the overhead to below that of the other schemes.\\
+Regarding cache polution, only the counters of groups currently in use will need to be kept in the cache, so the effect that the counters have on cache hit rate will be relatively small, but non-negligible.
+
+\paragraph{The Superroot Table}
+I then iterated on this idea. The performance of the scheme detailed in \textit{Efficient Tagged Memory} was thanks to its finely-tuned tag table. Ideally, we would not have to sacrifice this performance. However, another problem with increasing the scope of the root tags is that it also decreases the chance that all of the leaf tags it covers are zero, and thus we are more likely to need to perform a two-stage lookup, meaning we bring more zeroes into the tag cache than before. That is, the effective cacheability of the table has decreased -- whenever we bring in a leaf line of zeroes, we risk evicting a root line, meaning the coverage of the tag cache is reduced. It is a balancing act to find the optimal scope for the root bits, which the \textit{Efficient Tagged Memory} scheme has already calibrated for.
+
+Instead of replacing the root table with a set of counters, we can extend \textit{Efficient Tagged Memory}'s scheme, keeping the root table, but also maintaining page-wide counters to preserve the property of not needing to scan the entire page of leaf tags each time we clear one. If we were to keep the root table and also have counter groups that cover $k=64$ tag cachelines, there would be $\frac{4096 \times 8}{512} = 64$ root bits for each counter.\\
+By keeping the root table, we can now discard the counters entirely, replacing them with something more physically compact. We know that checking if all the tags in the page are cleared is equivalent to checking if all of the 64 corresponding root bits are clear, and as the 64 root bits fit in a word or two, this process is much more maneagable than scanning an entire page, so we can simply do this instead of maintaining page-wide counters.\\
+Instead of counters, we can simply have a single bit that we clear whenever the corresponding 64 root bits are cleared, and we set when any of the 64 root bits are set. This effectively adds a third layer at the top of the hierarchical table. The ``superroot'' level has one bit for each page of leaf tags. These superroot bits are stored in their own table, beneath the root and leaf tables. By transitivity through the root level, we maintain the property that if any tags in the block are set, the superroot bit will be set, and it will be cleared otherwise.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.7\textwidth]{phu}
+	\caption{The Phoenix scheme's three-level hierarchical lookup table.}
+	\label{fig:phu}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.7\textwidth]{pht}
+	\caption{The physical layout of the hierarchical table in the Phoenix scheme.}
+	\label{fig:pht}
+\end{figure}
+
+\paragraph{The Tag Working Set}
+In this scheme, we want to free pages of leaf tags that are unused and only contain zeroes. For pages that contain at least one leaf tag set, we must keep them allocated. To do this, we can mandate that whenever a superroot bit becomes zero, we free its corresponding page of leaf tags. On attempting to read the page, we will first consult the superroot bit, and upon noticing that it is zero, we will not attempt to read any deeper into the hierarchy, avoiding encountering a fault on attempting to read an unallocated page.\\
+This would be correct, but it might result in undesirable thrashing of the DRAM allocator for some workloads -- if a page only contains one tag that is constantly being set and unset, we would make many requests to the DRAM allocator to free and then re-allocate that page, likely resulting in increased latency experienced within our guest OS, and it has the potential to adversely affect the performance of other guest OSes if they happen to also be queueing to use the allocator.
+
+To mitigate this, we have the concept of a ``tag working set''. This is a set of pages in which the system is currently accessing \textit{non-zero} tags. It operates similarly to a cache in the sense that it is a set which respects temporal locality: when we access non-zero tags in a page, we place that page into the tag working set, but the set's finite size means we must in turn evict another page from the set, \textit{ideally one for which we have not accessed non-zero tags for some time}.
+
+The tag working set can help mitigate the thrashing problem. We can mandate that we only free a page once the following becomes true:
+\begin{equation}
+	\text{The page contains no set tags } \wedge \text{ The page is not in the tag working set}
+\end{equation}
+When revisiting the thrashing example, we notice that we would not free the page immediately on clearing it, as it would still remain in the tag working set for some time. If we tune the parameters well, it will remain in the set until the tag is set once more, and we will then have avoided making any requests the allocator.
+
+With this, we can describe a set of rules for when to update the tag working set, and when to allocate and free pages. Algorithm \ref{alg:pho} details these rules.
+
+\algblock[Name]{On}{End}
+\algblockdefx[NAME]{START}{END}%
+[2][Unknown]{On #1(#2)}%
+{Ending}
+\makeatletter
+\renewcommand{\ALG@name}{Algorithm}
+\makeatother
+\begin{algorithm}
+    \caption{Set of rules for when to update the tag working set, and when to allocate and free pages}
+    \label{alg:pho}
+    \begin{algorithmic}[1]
+	    \On{ reading a non-zero tag from a page $p$ \textbf{do}}
+		    \If{$p$ is in the tag working set}
+			\State Promote $p$ to the most-recently used in the tag working set;
+		    \Else
+			\State Add $p$ to the tag working set, marking it as the most-recently used;
+		    \EndIf
+	\End
+\item
+	\On{ writing a non-zero tag to a page $p$ \textbf{do}}
+		    \If{$p$ is in the tag working set}
+			\State Promote $p$ to the most-recently used in the tag working set;
+		    \Else
+			\State Allocate $p$;
+			\State Add $p$ to the tag working set, marking it as the most-recently used;
+		    \EndIf
+	\End
+\item
+	\On{ clearing a page of tags $p$ \textbf{do}}
+		    \If{$p$ is in the tag working set}
+			\State Free $p$;
+		    \EndIf
+	\End
+\item
+	\On{ Evicting a page $p$ from the tag working set \textbf{do}}
+		    \If{$p$ contains no set tags}
+			\State Free $p$;
+		    \EndIf
+	\End
+    \end{algorithmic}
+\end{algorithm}
+
+These rules maintain the following invariant:
+\begin{equation}
+	\label{eq:iva}
+	\forall \text{ Tag Pages } . \text{ Page is not allocated } \iff \text{ Page is not in the tag working set } \wedge \text{ Page has no tags set }
+\end{equation}
+Which may be written equivalently as:
+\begin{equation}
+	\label{eq:ivb}
+	\forall \text{ Tag Pages } . \text{ Page is allocated } \iff \text{ Page is in the tag working set } \vee \text{ Page has at least one tag set }
+\end{equation}
+
+
+\subsubsection{The Algorithm}
+The two subsections above describe the workings of the novel tag controller scheme that I devised. I named it the Phoenix scheme.
+
+We now need an exact algorithm for reading from and writing to the tag table.
+
+The following is the algorithm for reading:
+\begin{figure}[H]
+	\centering
+	\subimport{resources}{Phoenix-Read.tex}
+	\caption{The Phoenix algorithm for reading tags. Tag working set operations are in red.}
+	\label{fig:phr}
+\end{figure}
+
+Introducing the tag working set has a secondary benefit. A design choice I made in the reading algorithm was that if the page we are reading is in the tag working set, we skip reading from the superroot table and instead read straight from the root table. Pages that are in the tag working set are most likely to have their superroot bits set, as after all it is \textit{by accessing a set tag in the page} that a page enters the set. This way, we avoid the extra third lookup for the cases where it is most likely that this lookup will not allow us to take a shortcut. As we skip straight to the root table, this means that in these cases the lookup speeds cannot be much worse than those experienced in the \textit{Efficient Tagged Memory} scheme.\\
+It is always safe to skip over the superroot bit when the page is in the tag working set; we never risk reading from an unallocated page of tags. Property \ref{eq:ivb} implies that the page must be allocated if the page is in the tag working set.
+
+The \textit{Efficient Tagged Memory} scheme uses a trick to avoid some unnecessary writes: when we clear a leaf cacheline, we need not write the cleared cacheline back into the leaf table, and instead we can simply clear the root bit, as when we next read these tags, even if their values in the table are stale, we will encounter the cleared root bit first, allowing us to take a shortcut to returning zeroes. This works because we always read the root before the leaf.\\
+However, the previously mentioned design choice I made in the Phoenix scheme's read algorithm means we cannot use the same trick when we clear a group of root bits, as we do not always read the superroot before the root. This means that when a group of 64 root bits becomes clear, we must write them all back as zeroes, as well as updating the superroot bit. If we do not do this, then when we skip over the superroot table during a read, we might end up following a stale root table entry down into a stale leaf table cacheline, reading out 1s when we should be reading 0s. This can be seen in the algorithm for writing.
+
+The following is the algorithm for writing:
+\begin{figure}[H]
+	\centering
+	\subimport{resources}{Phoenix-Write.tex}
+	\caption{The Phoenix algorithm for writing tags. DRAM allocator operations are orange.}
+	\label{fig:phw}
+\end{figure}
+
+In the case where we update the tag working set and then immediately allocate a page in DRAM, there might be an opportunity to bypass the dynamic DRAM allocator. If the page we evict from the tag working set happens to contain no set tags, we would free it. Instead, as we are about to allocate a page, we might instead be able to simply transfer the page from one superroot bit to another, perhaps by changing mappings in the appropriate table. Whether or not this would be possible would depend on the interface of the DRAM allocator, and what is exposed to the guest OSes.
+
+\subsubsection{The Implementation}
+\texttt{PhoenixSController.h} defines the Phoenix scheme's tag controller.
+
+On constructing an instance, two interesting parameters must be passed:\\
+\texttt{twsSize} is the maximum size of the tag working set. A smaller set would mean that on average fewer DRAM pages would be allocated, resulting in the average space overhead of the tag table decreasing. Also, lookup times and area consumption of the actual physical tag controller would decrease. A larger tag working set would provide greater locality benefits, and perhaps less allocator thrashing.\\
+\texttt{useTrueLRU} defines whether we are simulating an exact LRU replacement scheme for the tag working set, or an approximation of it, namely NRU. If this parameter is specified as \texttt{false}, the NRU scheme used will be a worst-case NRU. That is, the second-most-recently used page will be evicted. This way, we can get an approximate lower bound on the performance of an actual implementation of non-true LRU.
+
+The tag working set itself is implemented as a \texttt{std::vector} of page indices. Whenever we access non-zero tags in a page, we move the index of that page to the back of the vector if it is already in the set, or add it to the back if it is not.\\
+Whenever we add a page, we must check that the size of the vector has not exceeded \texttt{twsSize}. If it has, we choose our victim. If \texttt{useTrueLRU} is true, we pick the index at the front of the vector. Otherwise, we pick the index just before the back.\\
+To check if an index is in the tag working set, we simply do a linear pass over the vector.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{lru}
+	\caption{A visualisation of the implementation of the tag working set, and how the replacement policies choose their victims.}
+	\label{fig:lru}
+\end{figure}
+
+Realistically, the \texttt{twsSize} will not be larger than a three-digit number, so the $O(n)$ cost that these operations have on the running time of the simulator is negligible.
+
+We use a \texttt{std::unordered\_set} to keep track of which pages are allocated in DRAM as the simulation progresses. The set is updated by the \texttt{DRAMAlloc} and \texttt{DRAMFree} methods, which are called by the \texttt{handleRead} and \texttt{handleWrite} algorithms. It is also initialised during \texttt{setup}.\\
+After each LLC miss that the controller serves, it records how many pages are currently allocated in DRAM -- i.e.\ the size of the \textit{unordered\_set}. These sizes are stored in a frequency list, implemented as a \texttt{std::unordered\_map} which maps a count to the frequency of that count. \texttt{reportStats} uses this frequency list to report some metrics at the end of the simulation.
 
 \subsection{Repository Overview}
 - the dirtree thing
+
+
+%

@@ -1,0 +1,7 @@
+\begin{minted}[linenos=true,bgcolor=codebg,numberblanklines=true,showspaces=false,breaklines=true]{cpp}
+static std::pair<uint64_t, uint16_t> translateToTagAddr(uint64_t addr_base) {
+    uint64_t tag_base = ((addr_base / 128) >> 6) << 6;
+    uint16_t tag_offset = ((addr_base>>6)*4) % 512;     // index into the tag cacheline
+    return {tag_base, tag_offset};
+}
+\end{minted}
