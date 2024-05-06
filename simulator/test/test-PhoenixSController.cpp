@@ -20,16 +20,44 @@ TEST(PhoenixSControllerTest, DRAMUsage) {
 
     gzFile output_trace = gzopen("test_output_trace.gz", "wb");
     ofstream output_log{"test_output_log"};
-    PhoenixSController controller(output_trace, output_log, 8, true);
+    PhoenixSController controller(output_trace, output_log, 1, true);
     controller.setup(decoder);
 
     controller.reportStats();
 
+    for (auto x : controller.tag_working_set) {
+        cout << ":" << x << endl;
+    }
+
+    cout << "ONE" << endl;
     doWrite(controller, 0b00000000000000000000000000, 0b1111);   // write to already non-zero block
     controller.reportStats();
+    for (auto x : controller.tag_working_set) {
+        cout << ":" << x << endl;
+    }
 
+    cout << "TWO" << endl;
     doWrite(controller, 0b10000000000000000000000000, 0b1111);    // write to zero block
     controller.reportStats();   // expect the maximum number of blocks to increase by one
+    cout << "B " << controller.blockIndex(0b10000000000000000000000000) << endl;
+    for (auto x : controller.tag_working_set) {
+        cout << ":" << x << endl;
+    }
+
+    cout << "THREE" << endl;
+    doWrite(controller, 0b10000000000000000000000000, 0b0000);   // undo that write
+    controller.reportStats();
+    for (auto x : controller.tag_working_set) {
+    cout << ":" << x << endl;
+    }
+
+    cout << "FOUR" << endl;
+    doWrite(controller, 0b00000000000000000000000000, 0b1111);    // evict other page from tws
+    controller.reportStats();   // expect the maximum number of blocks to increase by one
+    cout << "B " << controller.blockIndex(0b00000000000000000000000000) << endl;
+    for (auto x : controller.tag_working_set) {
+    cout << ":" << x << endl;
+    }
 
     EXPECT_EQ(0, 1);
 

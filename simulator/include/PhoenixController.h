@@ -84,7 +84,7 @@ protected:
 
         tag_working_set.push_back(index);
 
-        if (tag_working_set.size() == twsSize) {
+        if (tag_working_set.size() > twsSize) {
             auto it = tag_working_set.begin();
             if (!useTrueLRU) for (int i = 2; i < twsSize; i++) it++;  // if approximating LRU, evict the second-most-recently used, to provide a worst-case bound
             uint16_t evicted = *it;
@@ -187,8 +187,6 @@ public:
                         tags = 0;
                         break;
                     }
-
-                    updateTWS(index);
                 }
 
                 result = translateToRootAddr(ax.addr);
@@ -209,6 +207,12 @@ public:
                 leaf_line = memory.doRead(leaf_base_addr);
 
                 tags = getTags(leaf_line, leaf_cacheline_index);
+
+                if (!tags) {
+                    //cout << "read ";
+                    updateTWS(index);
+                }
+
                 break;
 
             case ACCESS_TYPE_WRITE:
@@ -293,6 +297,9 @@ public:
                     }
 
                 } else {
+                    bool wasInTWS = isInTWS(index);
+                    updateTWS(index);
+
                     result = translateToSuperrootAddr(ax.addr);
                     superroot_base_addr = result.first;
                     superroot_cacheline_index = result.second;
@@ -305,8 +312,7 @@ public:
                     root_cacheline_index = result.second;
 
                     if (!superroot_tag) {
-                        if (!isInTWS(index)) {
-                            updateTWS(index);
+                        if (!wasInTWS) {
                             DRAMAllocate(index);
                         }
                         modifyTag(superroot_line, superroot_cacheline_index, 1);

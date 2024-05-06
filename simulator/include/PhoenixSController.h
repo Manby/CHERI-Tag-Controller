@@ -18,7 +18,8 @@
 constexpr uint64_t S_SUPERROOT_TABLE_SIZE = ROOT_TABLE_SIZE >> 6;
 
 class PhoenixSController : public Controller {
-protected:
+//protected:
+public:
     vector<uint16_t> tag_working_set;    // set of blocks in the current tag working set; ordered by LRU policy, with LRU at the front
     unordered_set<uint16_t> allocated;          // set of blocks that currently have an allocated portion of DRAM
     uint16_t twsSize;                           // maximum size of the tag working set
@@ -79,6 +80,7 @@ protected:
     }
 
     uint16_t updateTWS(uint16_t index) {           // returns the index of the evicted block
+        //cout << "updateTWS" << endl;
         if (isInTWS(index)) {
             promote(index);
             return 0xffff;
@@ -86,7 +88,7 @@ protected:
 
         tag_working_set.push_back(index);
 
-        if (tag_working_set.size() == twsSize) {
+        if (tag_working_set.size() > twsSize) {
             auto it = tag_working_set.begin();
             if (!useTrueLRU) for (int i = 2; i < twsSize; i++) it++;  // if approximating LRU, evict the second-most-recently used, to provide a worst-case bound
             uint16_t evicted = *it;
@@ -130,7 +132,6 @@ public:
     void setup(Decoder &decoder) override {
         Cacheline superroot_line, root_line, leaf_line;
         uint8_t superroot_byte = 0, root_byte = 0;
-        uint16_t index = 0;      // block index
         int a=0, b=0, c=0, d=0, e=0;
         bool clear;
 
@@ -173,6 +174,7 @@ public:
         }
 
         updateDramUsage();
+        //cout << "setup complete" << endl;
     };
 
     uint16_t handleRead(memAccess ax) override {
@@ -199,8 +201,6 @@ public:
                         tags = 0;
                         break;
                     }
-
-                    updateTWS(index);
                 }
 
                 result = translateToRootAddr(ax.addr);
@@ -225,6 +225,12 @@ public:
                 //cout << "done" << endl;
 
                 tags = getTags(leaf_line, leaf_cacheline_index);
+
+                if (!tags) {
+                    //cout << "read ";
+                    updateTWS(index);
+                }
+
                 break;
 
             case ACCESS_TYPE_WRITE:
@@ -322,6 +328,11 @@ public:
                     }
 
                 } else {
+                    //cout << "writing non-zero tags" << endl;
+                    //cout << "write ";
+                    bool wasInTWS = isInTWS(index);
+                    updateTWS(index);
+
                     //cout << "right branch" << endl;
                     result = translateToSuperrootAddr(ax.addr);
                     superroot_base_addr = result.first;
@@ -334,6 +345,11 @@ public:
                     //cout << "addr " << superroot_base_addr << " index " << superroot_cacheline_index << endl;
                     superroot_tag = getTag(superroot_line, superroot_cacheline_index);
 
+                    //for (auto t : superroot_line) {
+                        //cout << (int) t << " ";
+                    //}
+                    //cout << endl;
+
                     result = translateToRootAddr(ax.addr);
                     root_base_addr = result.first;
                     root_cacheline_index = result.second;
@@ -341,9 +357,8 @@ public:
                     if (!superroot_tag) {
                         //cout << "case a1" << endl;
                         mightAlloc++;
-                        if (!isInTWS(index)) {
+                        if (!wasInTWS) {
                             //cout << "case a2" << endl;
-                            updateTWS(index);
                             DRAMAllocate(index);
                         }
                         modifyTag(superroot_line, superroot_cacheline_index, 1);
@@ -354,6 +369,7 @@ public:
                         root_line = Cacheline{};    // a fully-zero cacheline
 
                     } else {
+                        //cout << "writing to already non-zero block" << endl;
                         //cout << "reading r " << root_base_addr << endl;
                         root_line = memory.doRead(root_base_addr);
                         //cout << "done" << endl;
