@@ -1,11 +1,11 @@
-\documentclass[10pt,a4paper]{article}
-\usepackage[left=2cm, right=2cm]{geometry}
+\documentclass[12pt,a4paper,twoside,openright]{report}
+\usepackage[pdfborder={0 0 0}]{hyperref}    % turns references into hyperlinks
+\usepackage[margin=25mm]{geometry}  % adjusts page layout
 \setlength{\parindent}{0pt}
 \usepackage{parskip}
 \usepackage[super]{nth}
 \usepackage[natbib=true,sorting=none,style=numeric,backend=biber,useprefix=true]{biblatex}
 \usepackage{amsmath}
-\usepackage{hyperref}
 \usepackage{import}
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -22,6 +22,14 @@
 \usepackage{minted}[breaklines,linenos]
 \definecolor{codebg}{rgb}{0.9,0.9,0.9}
 
+\raggedbottom                           % try to avoid widows and orphans
+\sloppy
+\clubpenalty1000%
+\widowpenalty1000%
+
+\renewcommand{\baselinestretch}{1.1}    % adjust line spacing to make
+                                        % more readable
+
 \setcounter{secnumdepth}{4}
 \setcounter{tocdepth}{4}
 \titleformat{\paragraph}
@@ -30,6 +38,7 @@
 {0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
 
 \addbibresource{cites.bib}
+%!!!\bibliographystyle{plain}
 \AtBeginBibliography{}
 
 \DeclareBibliographyCategory{introduction}
@@ -47,27 +56,91 @@
 
 \begin{document}
 
-Cover page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title
+
+
+\pagestyle{empty}
+
+\rightline{\LARGE \textbf{Kofi Wilkinson}}
+
+\vspace*{60mm}
+\begin{center}
+\Huge
+\textbf{Next Generation CHERI Tag Cotnroller} \\[5mm]
+Computer Science Tripos -- Part II \\[5mm]
+Homerton College \\[5mm]
+May 10, 2024
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Proforma, table of contents and list of figures
+
+\pagestyle{plain}
+
+\chapter*{Proforma}
+
+{\large
+\begin{tabular}{ll}
+Name:               & \bf Kofi Wilkinson                        \\
+College:            & \bf Homerton College                      \\
+Project Title:      & \bf Next Generation CHERI Tag Controller  \\
+Examination:        & \bf Computer Science Tripos -- Part II, June 2024  \\
+Word Count:         & \bf -- \footnotemark[1]		\\
+Project Originator: & Dr Jonathan Woodruff              \\
+Supervisor:         & Dr Jonathan Woodruff              \\
+\end{tabular}
+}
+\footnotetext[1]{This word count was computed by \texttt{-}
+}
+\stepcounter{footnote}
+
+
+\section*{Original Aims of the Project}
+
+To develop a framework in which a computer architect can implement and evaluate the
+algorithms of a memory access controller for use in the microarchitecture of a
+tagged memory architecture. To also use the framework to evaluate two existing
+tag controller implementations.
+
+\section*{Work Completed}
+
+I successfully developed the framework, and used it to evaluate two existing tag
+controller implementations. I also developed an additional visualisation tool
+allowing insight into the workings of the tag controllers to be gained visually.
+I then used these tools to develop a novel tag controller of my own design,
+which I evaluated and compared to the existing ones.
+
+\section*{Special Difficulties}
+
+None.
 
 \newpage
+\section*{Declaration}
 
+I, Kofi Wilkinson of Homerton College, being a candidate for Part II of the Computer Science
+Tripos, hereby declare that this dissertation and the work described in it are
+my own work, unaided except as may be specified below, and that the dissertation
+does not contain material that has already been used to any substantial extent
+for a comparable purpose. In preparation of this dissertation I did not use
+text from AI-assisted platforms generating natural language answers to user
+queries, including but not limited to ChatGPT. I am content for my
+dissertation to be made available to the students and staff of the University.
 
-Declaration of Originality
+Signed
 
-\newpage
+\includegraphics[scale=0.06]{signature}
 
-
-Proforma
-
-\newpage
-
+Date \today
 
 \tableofcontents
 
-\newpage
-
 \listoffigures
 
+\newpage
+\section*{Acknowledgements}
+
+--
 
 \include{introduction}
 
@@ -75,22 +148,25 @@ Proforma
 
 \include{implementation}
 
-\include{evaluation}
+%\include{evaluation}
 
-\include{conclusions}
+%\include{conclusions}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% the bibliography
+\addcontentsline{toc}{chapter}{Bibliography}
 \printbibliography[]
+%\bibliography{refs}
 
-\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% the appendices
+\appendix
 
-Appendices
+\chapter{Dummy}
 
-\newpage
+\chapter{Project Proposal}
 
-Index (Optional)
-
-\newpage
-
-Project Proposal
+%\input{proposal}
 
 \end{document}

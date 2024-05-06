@@ -1,10 +1,10 @@
-\section{Introduction}
+\chapter{Introduction}
 
-\subsection{Tagged Memory Architectures}
+\section{Tagged Memory Architectures}
 The paper \textit{Efficient Tagged Memory} \cite{joannou2017efficient} describes how tagged memory architectures have been explored in academia and employed in industry many times with various different focuses throughout the history of computer design. Through both academic rigour and market testing they have been proven to provide desirable system-wide security properties such as hardware capabilities \cite{clark1989application}, pointer integrity \cite{crandall2004minos}, watchpoints \cite{greathouse2012case}, and information-flow tracking \cite{suh2004secure}.\\
 There are however associated costs that render widespread adoption of tagged memory architectures currently infeasible. With a simplistic scheme, the number of memory accesses that workloads must perform doubles due to the CPU now having to access the tag of the value it writes, as well as the value itself, which brings an unacceptably large time overhead. Also, the introduction of the table in which tags are stored comes with a constant memory consumption cost, which is particularly disadvantageous within the server-side compute industry, where every byte of DRAM is precious.
 
-\subsection{Question 1 -- Existing Mitigations}
+\section{Question 1 -- Existing Mitigations}
 Efforts have been and are currently being made to mitigate the overheads of tagged memory. Tag caches are often used in practice to hold tag data closer to the CPU for faster access times. The main area in which mitigation of the memory access latency overhead is found is in increasing the `cacheability' of the tag table in DRAM. That is, by increasing the amount of information about the tags that we store in the fast-access tag cache, we reduce the average latency overhead that is introduced by tagged memory's new requirement of accessing tag data. An effort of this kind, described in \textit{Efficient Tagged Memory}, has been shown to reduce the common-case DRAM traffic overhead to ``well below 1\%''.
 
 The first question that my dissertation concerns itself with is as follows:
@@ -12,7 +12,7 @@ The first question that my dissertation concerns itself with is as follows:
 	``Question 1: How do existing implementations aim to mitigate the overheads that tagged memory introduces, and how effective are they at doing so?''
 \end{center}
 
-\subsection{Question 2 -- Potential Areas for Improvement}
+\section{Question 2 -- Potential Areas for Improvement}
 There has been little documented research on attempts to address the memory consumption cost that renders tagged memory a non-starter in server applications. A potential solution to this problem might lie in the use of a hypervisor to dynamiclly allocate DRAM to guest OSes. Suppose that the tagged memory system is one which runs a hypervisor -- a common setup for servers. Suppose further that the hypervisor has a dynamic DRAM allocator that could offer free physical address regions to its guest operating systems as and when they require it. A novel system involving a dynamically-resizing tag table that can be compressed and decompressed at runtime would allow the guest OSes to reserve and free regions of DRAM that they use for storing their tags as they execute, meaning that each OS will consume large amounts of extra space only when necessary, as opposed to all of them reserving at boot-time the maximum that they might require during any part of their execution. By increasing the `compressibility' of the tag table, we can keep the size of the tag table in each guest OS instance closer to a theoretical minimum, reducing the additional memory consumed by the table.
 
 The second question that my dissertation concerns itself with is as follows:
@@ -20,7 +20,7 @@ The second question that my dissertation concerns itself with is as follows:
 	``Question 2: How can we further reduce the overheads that tagged memory introduces?''
 \end{center}
 
-\subsection{My Project}
+\section{My Project}
 The utility of tagged memory architectures motivates the exploration and investigation of existing tag controller schemes in search for opportunities to improve upon them -- to increase the `cacheability' and `compressibility' of the tag table. Previously, frameworks for implementing tag controllers have been developed, but they were either proprietary, heavily undocumented, or not intended for public use.
 %[!!! say more, cite sources]
 However, it is from research performed using these frameworks where the majority of innovation in tagged memory architecture implementations has arisen.\\

@@ -1,9 +1,9 @@
-\section{Preparation}
+\chapter{Preparation}
 
 This chapter explains the relevant background material required to undertake the project and to understand the dissertation. It also details the major pieces of my project, how they fit together, and what was required to produce a successful implementation.
 
-\subsection{Background Material}
-\subsubsection{Tagged Memory Architectures}
+\section{Background Material}
+\subsection{Tagged Memory Architectures}
 In a tagged memory architecture $N$-bit values in memory are notionally `extended' with $M$-bit tags. Doing so can provide desirable security properties like those mentioned in the introduction. \textit{Efficient Tagged Memory} \cite{joannou2017efficient} describes how a one-bit tag is sufficient to implement all of the security properties that tagged memory architectures can afford. The extension of values with tags might be implemented in one of several ways, but section III of the paper details how storing all of the tag bits in a single table at the bottom of DRAM is the most practical for single-bit tag (SBT) architectures; this is also the most used technique in practice.\\
 Typically, these architectures mandate allocation of a static region of DRAM at boot-time to act as the tag table. This results in a constant physical memory consumption cost that is proportional to the size of the (taggable) address space.
 
@@ -32,7 +32,7 @@ My project focuses on merged-cache hierarchy architectures. In these, values in 
 	\label{fig:itf}
 \end{figure}
 
-\subsubsection{CHERI}
+\subsection{CHERI}
 My project focuses on the CHERI architecture model. The model defines a single-bit tagged memory architecture, where 64-bit pointers can be replaced with 128-bit `capabilities' that are also are given a 1-bit tag, which allows hardware-enforced security invariants to be guaranteed about these special values, and thus also about executions of programs that use them. There is more information about the CHERI model on the website for the Departement of Computer Science and Technology at the University of Cambridge \cite{clcheri}.
 
 \begin{figure}[H]
@@ -44,7 +44,7 @@ My project focuses on the CHERI architecture model. The model defines a single-b
 
 My project focuses particularly on the CHERI architecture as it is a speciality of the university and of my supervisor, and it is also the tagged memory architecture that I am most familiar with, as it was briefly introduced to us in IB, and I also spent some time working with it over the previous summer during my internship as a member of Arm's Morello Kernel Team. Much of my work and findings however will be transferable to other tagged memory architectures.
 
-\subsubsection{A Basic Scheme}
+\subsection{A Basic Scheme}
 The most basic scheme has a single flat table at the bottom* of DRAM that contains all of the tags, and nothing more. This table contains one tag bit per 128 bits of regular memory (as a CHERI capability is 128-bits plus a 1-bit tag). The table therefore consumes the bottom \nth{129} of DRAM. The layout of DRAM is as depicted in figure \ref{fig:tgm}.
 
 * Note that some implementations instead put the table at the top of DRAM. This is functionally equivalent, though of course the addresses used will differ.
@@ -82,7 +82,7 @@ The actual base address of the tag cacheline will index into the tag table. In t
 \frac{\text{512 tags per tag cacheline}}{\text{4 tags per value cacheline}} = \text{128 value cachelines covered by one tag cacheline}
 \end{equation}
 
-\subsubsection{The Importance of a Tag Cache}
+\subsection{The Importance of a Tag Cache}
 On retrieving a cacheline, the tag controller must make two memory accesses; one to retrieve the value cacheline, and another to retrieve the tag cacheline, from which the appropriate tags are extracted and merged with the values, before returning the result to its LLC client. The fact that we now have to make several memory accesses when retrieving a single cacheline is why we observe an overhead in lookup latency. Typically, the access to the value cacheline and the access to the tag cacheline can be pipelined, but this still increases the latency by a factor of about 1.1. On the other hand, the algorithm for writing contains two accesses with a data dependency, and thus these cannot be pipelined, so the latency of LLC write misses increases by a factor of 2.
 
 Without adding another level of data cache, we cannot avoid accessing the value cacheline in DRAM. What we can do though is introduce a new cache at this level of the memory hierarchy, just below the LLC and alongside the tag controller, that stores cachelines from \textit{the DRAM tag table}. This is known as the tag cache.\\
@@ -95,7 +95,7 @@ When accessing memory with the presence of a tag cache, we first check to see if
 	\label{fig:tca}
 \end{figure}
 
-\subsubsection{\textit{Efficient Tagged Memory}'s Hierarchical Scheme}
+\subsection{\textit{Efficient Tagged Memory}'s Hierarchical Scheme}
 One of the tag controller schemes that my project focuses on is the scheme described in \textit{Efficient Tagged Memory}. This is in part becuase of its simplicity, but also because my supervisor contributed to the paper; his familiarity with the scheme allowed him to guide me easily and effectively where necessary.
 
 One way to increase the hit rate of the tag cache is to store more information about the tag table within it. This can be done by simply increasing its size. However, there is an alternative -- by adjusting the scheme, we can increase the `cacheability' of the tag table. That is, we can fit more information about the tag table in the same size tag cache. Section VI of \textit{Efficient Tagged Memory} details a tag table scheme that does just this.
@@ -153,7 +153,7 @@ The actual base address of the root tag cacheline will index into the root table
 = \text{65536 value cachelines covered by one root cacheline}
 \end{multline}
 
-\subsubsection{The Morello Project Scheme}
+\subsection{The Morello Project Scheme}
 As I mentioned prior, during my internship with Arm over the previous summer I contributed to their Morello project. Morello is a research project that defines a microarchitecture based on the CHERI model. Another tag controller scheme that my project focuses on is the scheme used in the Morello microarchitecture. This is due to my own and my supervisor's familiarity with CHERI, and the Morello architecture and microarchitecture. There is more information about the Morello project at the project's website \cite{morello}.
 
 This scheme aims to do a similar thing to the one described in \textit{Efficient Tagged Memory}, but in a different way. Instead of introducing a new, more information-dense table that can be stored in the existing tag cache, it introduces a new tag cache that holds information-dense data.
@@ -171,7 +171,7 @@ This scheme uses a simple flat DRAM tag table, just like the one in the basic sc
 
 As the tag table has not changed from the simple scheme, the formulae used by the controller for translating addresses are the same (equations \ref{eq:avcas} and \ref{eq:atcas}), and so are the two algorithms (figures \ref{fig:bar} and \ref{fig:baw}).
 
-\subsection{Three-Stage Simulation}
+\section{Three-Stage Simulation}
 Part of my project was to develop a simulator that sits in the middle of a three-stage simulation pipeline. The full pipeline enables the simulation and analysis of the tag table and cache behaviour of given CHERI tag controllers.
 
 \begin{figure}[H]
@@ -181,17 +181,17 @@ Part of my project was to develop a simulator that sits in the middle of a three
 	\label{fig:tss}
 \end{figure}
 
-In this subsection, I explain each of the three stages of simulation.
+In this section, I explain each of the three stages of simulation.
 
-\subsubsection{Workload Execution -- LLC Miss Simulation}
+\subsection{Workload Execution -- LLC Miss Simulation}
 A former student had previously created a simulator that consumes a program binary and simulates the execution of the binary on a CHERI architecture. The simulator outputs trace files that log the last-level cache misses that occurred during the simulated execution.
 
 I have been given access to a collection of trace files by my supervisor. These files were logged whilst running various benchmark binaries. The simulator I developed takes these trace files as input. As the tag controller only receives information about LLC misses, the trace files contain sufficient information to determine which accesses would be made by the simulated tag controller algorithm if it were to run the given workload.
 
-\subsubsection{A Tag Controller Simulator}
+\subsection{A Tag Controller Simulator}
 The main objective of my project was to develop a tag controller simulator in C++. When given a workload it should simulate the memory accesses that a specified tag controller algorithm would result in. The idea is that this simulator can be leveraged to provide insight into the performance and inner workings of the tag controller algorithm being simulated, providing useful information to an architect.
 
-\subsubsection{ChampSim -- An Appropriate Cache Simulator}
+\subsection{ChampSim -- An Appropriate Cache Simulator}
 ChampSim is an open-source trace based cache simulator written in C++. There is more information about ChampSim at the ChampSim GitHub profile page \cite{champsim}.
 
 My simulator interfaces with ChampSim, having it handle the simulation of the tag cache(s). My simulator provides ChampSim with a trace file of memory accesses that the simulated tag controller makes during its execution of the workload. ChampSim then provides the user with metrics regarding cache access frequency and hit ratio. The user can specify parameters of the tag cache such as cache size and number of ways.\\
@@ -199,12 +199,12 @@ ChampSim is a good choice of cache simulator because its open-source C++ code al
 
 I opted to use an existing cache simulator instead of developing my own because the focus of this project is on investigating tag controllers, as opposed to caches in general, and my supervisor informed me that there are likely many opportunities for bugs to arise when developing a cache simulator of my own, and thus it is a more appropriate use of my time to focus more on tag controller research rather than debugging software that has already been written.
 
-\subsubsection{Visualisation Tool}
+\subsection{Visualisation Tool}
 It would be useful for an architect to be able to somehow visualise how the state of the tag table and the tag cache changes as the workload executes. Having this insight would inform new approaches and justify design choices for a novel tag cache.
 
 As part of my project, I developed a tool that allows a user to take `snapshots' of the tag cache at chosen points of workload execution, and view them afterward. The images depict the state of the tag table and the tag cache at that point of execution.
 
-\subsubsection{Requirements Analysis}
+\subsection{Requirements Analysis}
 There are several requirements that a successful simulator must meet:
 \begin{itemize}
 	\item It must be able to decode the LLC miss input trace file format.
@@ -222,7 +222,7 @@ On top of this, for the visualisation tool to be functional and useful, the foll
 % Throughout implementation, I employed good software engineering practices to minimise unnecessary work and maximise the quality of both my final product and my evaluation.
 % [Details about swe practices!!!]
 
-\subsection{Starting Point}
+\section{Starting Point}
 The following bullet points detail relevant work completed and preparations made before beginning the project:
 \begin{itemize}
 	\item I had read the paper \textit{Efficient Tagged Memory}.
