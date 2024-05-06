@@ -23,7 +23,7 @@ protected:
     unordered_set<uint16_t> allocated;          // set of blocks that currently have an allocated portion of DRAM
     uint16_t twsSize;                           // maximum size of the tag working set
     bool useTrueLRU;                            // whether we are using true LRU or an approximation of it
-    unordered_map<uint16_t, int> dramUsage;
+    unordered_map<uint16_t, uint64_t> dramUsage;
     int allocCount, freeCount;
 
     static std::pair<uint64_t, uint16_t> translateToLeafAddr(uint64_t addr_base) {  // converts the base address of a data cacheline to that of the corresponding tag cacheline, and the bit-index into the cacheline where the tags begin
