@@ -27,7 +27,7 @@ elif parsed_args.morello == "s":
     schemes = ["phoenixs-8t"]
 
 else:
-    schemes = ["baseline", "etm", "phoenix-8t"]
+    schemes = ["baseline", "etm", "phoenixs-8t"]
 
     print("~~~~~ Configuring ChampSim ~~~~~\n")
     champsimConfig(128, 4, None)        # 4-way 32KiB Cache

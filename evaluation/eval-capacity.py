@@ -41,7 +41,7 @@ elif parsed_args.morello == "p":
             ]
 
 else:
-    schemes = ["baseline", "etm", "phoenix-8t"]
+    schemes = ["baseline", "etm", "phoenixs-8t"]
 
     cache_params = [
             (64, 4, None),

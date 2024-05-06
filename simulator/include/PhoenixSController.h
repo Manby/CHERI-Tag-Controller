@@ -413,10 +413,10 @@ public:
             v = it.first;
             if (v > max) max = v;
             if (v < min) min = v;
-            count += it.second;
-            tot += v * it.second;
+            count += (uint64_t) it.second;
+            tot += (uint64_t) ((uint64_t) v) * ((uint64_t) it.second);
         }
-        float avg = ((float) tot) / ((float) count);
+        float avg = (float) ((float) tot) / ((float) count);
 
         cout << "REPORT: === DRAM USAGE ===" << endl;
         cout << "REPORT: MAX BLOCKS:  " << max << endl;
