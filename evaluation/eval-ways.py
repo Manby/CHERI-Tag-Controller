@@ -20,6 +20,19 @@ skip = int(parsed_args.skip)
 if parsed_args.morello == "yes":
     schemes = ["morello-t", "morello-z"]
 
+    '''
+    cache_params_t = [
+            (256, 1, None),
+            (128, 2, None),
+            (32, 8, None)
+            ]
+    cache_params_z = [
+            (256, 1, None),
+            (128, 2, None),
+            (32, 8, None)
+            ]
+    '''
+
     cache_params_t = [
             (256, 1, None),
             (128, 2, None),

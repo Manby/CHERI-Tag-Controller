@@ -8,16 +8,16 @@ parser.add_argument('-s', dest='show', type=str, required=False, default="yes")
 parsed_args = parser.parse_args()
 
 d1 = load('data/wli1.txt')
-d2 = load('data/wli2.txt')
-#d2 = load('data/wli2m.txt')
+#d2 = load('data/wli2.txt')
+d2 = load('data/wli2m.txt')
 
 d = mergeDicts(d1, d2)
-d = collapseMorello(d)
+#d = collapseMorello(d)
 d = rename(d, 'phoenixs-8t', 'phoenix')
 
 N = 50000000
 
-for schemes, name in zip([['baseline', 'morello'], ['etm', 'phoenix'],
+for schemes, name in zip([['morello-z', 'morello-t'], ['baseline', 'morello'], ['etm', 'phoenix'],
                           ['baseline', 'morello', 'etm', 'phoenix']],
                          ['a', 'curr', 'new', 'all']):
     for count in ['access', 'miss']:
@@ -25,7 +25,7 @@ for schemes, name in zip([['baseline', 'morello'], ['etm', 'phoenix'],
 
         fig, ax = plt.subplots(layout='constrained', figsize=(10,5))
 
-        bars(ax, 0.25, d, workloads, schemes, 'total', count)
+        barsMorello(ax, 0.25, d, workloads, schemes, 'total', count)
 
         ax.set_ylabel('Cache '+count+'es')
         ax.set_title('Total number of cache '+count+'es')
