@@ -6,6 +6,7 @@ This chapter explains the relevant background material required to undertake the
 \subsection{Tagged Memory Architectures}
 In a tagged memory architecture $N$-bit values in memory are notionally `extended' with $M$-bit tags. Doing so can provide desirable security properties like those mentioned in the introduction. \textit{Efficient Tagged Memory} \cite{joannou2017efficient} describes how a one-bit tag is sufficient to implement all of the security properties that tagged memory architectures can afford. The extension of values with tags might be implemented in one of several ways, but section III of the paper details how storing all of the tag bits in a single table at the bottom of DRAM is the most practical for single-bit tag (SBT) architectures; this is also the most used technique in practice.\\
 Typically, these architectures mandate allocation of a static region of DRAM at boot-time to act as the tag table. This results in a constant physical memory consumption cost that is proportional to the size of the (taggable) address space.
+%cite most used technique!!!
 
 \begin{figure}[H]
 	\centering
@@ -219,8 +220,25 @@ On top of this, for the visualisation tool to be functional and useful, the foll
 	\item The visualisation tool must be able to read in the captured states of the tag table and the tag cache and produce an image that accurately depicts this state.
 \end{itemize}
 
-% Throughout implementation, I employed good software engineering practices to minimise unnecessary work and maximise the quality of both my final product and my evaluation.
-% [Details about swe practices!!!]
+\section{Software Engineering Practices}
+ Throughout implementation, I employed good software engineering practices to minimise unnecessary work and maximise the quality of both my final product and my evaluation.
+
+\subsection{Software Engineering Methodology}
+When implementing my programs, I applied the Waterfall model of software development. This model was mainly chosen because testing the indivual components of the program in isolation was difficult or infeasible, whilst testing the program as a whole was straightforward, due to the pipeline-like nature of the tag controller simulator. Figure \ref{fig:wat} shows the order in which the components were developed, and how the resulting system was tested.
+
+%[FIG WAT!!!]
+%waterfall
+
+\subsection{Build system}
+My project uses the CMake build system. This is a well-supported and well-documented build system that allowed for smooth compilation and also easy extension with libraries, such as GoogleTest, which I used for the microbenchmarks.
+
+\subsection{File Backups and Version Control}
+I used a private GitHub remote repository to provide version control and backups of all programs, files and documents related to my project. As I incrementally made changes, I made commits to the branch on which I was working, and I would frequently push these changes to the remote server to minimise the loss if things went wrong on my local machine. Fortunately, I encountered no issues with file loss throughout the project.
+
+\subsection{Software Licences}
+ChampSim is distributed under the Apache-2.0 licence. The licence allows free redistribution and modification of the software. My project requires modifications to be made to ChampSim, so, as per the licence, I state that such modifications are made in the README of the repository.\\
+GoogleTest is distributed under the BSD 3-Clause licence.
+
 
 \section{Starting Point}
 The following bullet points detail relevant work completed and preparations made before beginning the project:

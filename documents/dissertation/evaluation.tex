@@ -1,1 +1,257 @@
-\section{Evaluation}
+\chapter{Evaluation}
+
+In this chapter, I first present statistics provided by my tag controller
+simulator, and use them to evaluate the two currently used tag controller
+schemes, addressing Question 1, and also my novel tag controller scheme,
+addressing Question 2. I then summarise and reflect on the utility of the
+tag controller simulator as a tool for fostering innovation in the field of
+computer architecture.
+
+\section{DRAM Access Latency}
+The following data was gathered by simulating how the tag controllers from the
+basic scheme and from the Morello Project scheme handled 50 million LLC misses
+from several different workloads. The workloads were run on a simulated CHERI processor with 2GiB of memory.
+
+By default, I simulated a 4-way 32KiB tag cache, with no prefetcher. Some plots show how varying one of these parameters affects the performance of the cache.
+
+\subsection{Flat Table Controllers}
+The statistics for the Morello Project scheme were obtained by summing the values from the two simulations of the two caches, as equations \ref{eq:moa} and \ref{eq:mom} describe.
+
+%\begin{figure}[H]
+%	\centering
+\begin{align}
+\begin{split}
+	\label{eq:moa}
+	\text{Total number of tag cache accesses} =& \text{ Number of accesses to zero cache} \\ &+ \text{Number of accesses to non-zero cache}
+	\end{split}\\
+	\begin{split}
+	\label{eq:mom}
+	\text{Total number of tag cache misses} =& \text{ Number of zero cache misses} \\ &+ \text{Number of non-zero cache misses}
+	\end{split}
+\end{align}
+%	\caption{Calculating the overall tag cache statistics for simulations of the Morello Project tag controller.}
+%\end{figure}
+
+\subsubsection{Performance}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{../plots/basic-curr-access}
+	\caption{Tag cache access frequencies of the flat table controllers on various workloads.}
+	\label{plot:fa}
+\end{figure}
+Figure \ref{plot:fa} shows how both the Basic controller and the Morello Project controller always access the tag cache the same number of times. This is what we expect, as despite the cache arrangement differing, their algorithms (ignoring the pseudo-memory access operations of the Morello Project controller) are fundamentally the same if we treat the two caches of the Morello Project scheme as a single merged black-box cache.
+
+The figure also shows how the number of tag cache accesses each controller makes varies for different workloads. This is because different workloads have a different split between read operations and write operations. In these schemes, reads require one access to the tag cache, but writes require two -- one to fetch the cacheline, and one to write it back after it the target tags have been updated.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{../plots/basic-curr-miss}
+	\caption{Tag cache miss frequencies of the flat table controllers on various workloads.}
+	\label{plot:fm}
+\end{figure}
+Figure \ref{plot:fm} shows how many misses the tag caches of the two flat table controllers experience. This in turn tells us for how many of the 50 million LLC misses we must perform an additional DRAM access to retrieve the tag data, and thus we can get an idea of how much DRAM latency overhead the schemes bring.
+
+The tag controller serves requests from the last-level cache. These requests exhibit relatively little spatial and temporal locality, as all of the accesses that do exhibit such locality would very likely have hit in the other caches further up the hierarchy; only the least spatially and temporally local accesses make it down to the below last-level cache. Thus, we would expect the miss rate of the tag cache in the basic scheme to be roughly equal to that of a last-level data cache. For the SPEC benchmarks, the LLC miss rate is around 40-60\% [ccc cite]. We see in figure \ref{plot:fm} that in the case of the basic controller, we observe miss rates of up to 57\%, and thus we would have to access DRAM this much more often.\\
+These additional requests to the tag table in DRAM could be pipelined with the value data DRAM accesses, so we would expect latency to increase by an overall factor of up to $0.43 + 0.57 \times 1.1 = 1.057$.
+
+\subsubsection{Varying Capacity}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.49\textwidth]{../plots/capacity-h264ref-curr-miss}
+	\includegraphics[width=0.49\textwidth]{../plots/capacity-omnetpp-curr-miss}\\
+	\includegraphics[width=0.49\textwidth]{../plots/capacity-bzip2-curr-miss}
+	\caption{How tag cache size affects miss frequencies of the flat table controllers.}
+	\label{plot:fc}
+\end{figure}
+As we increase the capacity of the cache, we expect its hit rate to increase. We see exactly this in figure \ref{plot:fc}. The benefits of increasing the cache tend to decay exponentially, although there is an interesting exception to this trend when going from a 64KiB cache to a 128KiB cache when running the omnetpp workload. It might be the case that the tags of the data contained within working set of the omnetpp workload do not quite fit into 64KiB, but do fit into 128KiB. Thus, bridging the gap to an 128KiB cache means we begin to avoid many conflict misses that were previously occurring in a 64KiB cache.
+
+\subsubsection{Varying Ways}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.49\textwidth]{../plots/ways-h264ref-curr-miss}
+	\includegraphics[width=0.49\textwidth]{../plots/ways-omnetpp-curr-miss}
+	\includegraphics[width=0.49\textwidth]{../plots/ways-bzip2-curr-miss}
+	\caption{How the number of ways in the tag cache affects miss frequencies of the flat table controllers.}
+	\label{plot:fw}
+\end{figure}
+As we increase the number of ways in the cache whilst holding the capacity constant, we expect to see some improvement in hit ratio, but with diminishing returns. The plots in figure \ref{plot:fw} show exactly this.
+%ccc can we cite something e.g. saying how >4 ways barely helps? (assuming it corroborates with results)
+
+\subsubsection{Adding a Tag Cache Prefetcher}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.49\textwidth]{../plots/prefetcher-h264ref-curr-miss}
+	\includegraphics[width=0.49\textwidth]{../plots/prefetcher-omnetpp-curr-miss}
+	\includegraphics[width=0.49\textwidth]{../plots/prefetcher-bzip2-curr-miss}
+	\caption{How adding a prefetcher to the tag cache affects miss frequencies of the flat table controllers.}
+	\label{plot:fp}
+\end{figure}
+Prefetchers aim to avoid compulsory misses by assuming a large degree of spatial locality in the access pattern. However, as I described before, the tag cache is effectively a last-level cache, meaning there is very little locality to exploit at this level. We would thus expect to find that prefetchers, at least simple ones, cannot help much to reduce misses in the tag cache.
+
+I enabled two of ChampSim's provided prefetchers and simulated the benchmarks. We can see in figure \ref{plot:fp} that the stride prefetcher hardly changed performance, whilst the next line prefetcher made performance significantly worse. The worsening in performance is caused by the prefetcher fetching lines that cause useful lines -- ones that the controller was going to access again -- to be evicted before that subsequent access, when they otherwise would not have been.
+
+Using simple prefetchers does not seem like a viable option in improving the performance of tagged memory architectures. ChampSim provides two other built-in prefetchers, ``spp\_dev'' and ``va\_ampm\_lite'', however I was unable to get these to work.
+
+\subsection{Hierarchical Schemes}
+\subsubsection{Performance}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.7\textwidth]{../plots/basic-new-access}
+	\caption{Tag cache access frequencies of the hierarchical table controllers on various workloads.}
+	\label{plot:ha}
+\end{figure}
+
+When a hierarchcal tag controller is handling an LLC request, if it finds that the root or superroot bit is 1, the controller must traverse one level deeper into the hierarchical table. This requires an additional tag cache access. If this happens a lot, we would expect to see that these controllers perform many more than 50 million tag cache accesses.\\
+Figure \ref{plot:ha} shows that whilst handling the 50 million LLC misses, the two hierarchical tag controllers hardly made any more than 50 million accesses. This is a testament to the efficiency of the hierarchical table -- only rarely must we traverse deeper than the highest level.\\
+This fact is particularly promising for the Phoenix scheme. If it were the case that the optimal scope of the top-level bits was that of the \textit{Efficient Tagged Memory} scheme (one leaf cacheline per root bit), then we would expect to see the number of cache accesses rise when we add a third layer to the table with a larger scope. However, we do not see a significant increase in the number of accesses from the Phoenix controller, indicating that, at least for these workloads, it is beneficial to have a larger top-level scope.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.7\textwidth]{../plots/basic-new-miss}
+	\caption{Tag cache miss frequencies of the hierarchical table controllers on various workloads.}
+	\label{plot:hm}
+\end{figure}
+The tag cache miss rates are remarkably low for these schemes. We see no more than 303 tag cache misses caused by the handling of all 50 million LLC misses across all workloads.\\
+A potential explanation for the low miss rates might lie in the assumption scheme used to make educated guesses at the initial values of the tags in the tag table. The assumption scheme has some bias towards assuming tags are 0, as when the tags were initially accessed by a regular load or store, we assume that the data being accessed was non-capability data, though in reality it might have been capability data. This bias leads to the simulated tag table being sparser with tags than it was in reality. The hierarchical schemes are particularly good with sparse tables as they can store zeroes more compactly in the cache, thus their performance benefits from this bias.
+
+The Phoenix tag controller appears to always outperform the \textit{Efficient Tagged Memory} controller, often by a significant margin.\\
+Interestingly, in the case of the bzip2 the difference in performance is incredibly large -- the Phoenix tag cache sees only about 13\% of the number of misses that the \textit{Efficient Tagged Memory} scheme does.\\
+This might be because this workload has many unset tags, meaning that more there are more superroot bits set to zero resident in the cache. This would increase the effective scope of the cache, which in turn increases the hit rate.
+
+The exact resulting DRAM access latency overhead depends on which accesses missed. Suppose two cache misses occurred during the handling of a single LLC miss. As the accesses in one pass of the tag controller algorithm contain a data dependency, one could not be pipelined with the other. Whilst the former DRAM tag table access could be pipelined with the DRAM data access, the latter DRAM tag table access would have had to wait for the former to complete, resulting in an overhead factor of about 2.1. However, if the two cache misses occurred in the handling of two different LLC misses, then the accesses would be in two different passes of the algorithm, and the two resulting DRAM tag table accesses could both be pipelined with their respective DRAM data accesses, resulting in an overhead factor of about 1.1.\\
+As we do not know exactly which accesses missed, we can only state bounds for the resulting DRAM access latency overhead. In the best case, all of these misses occured during handling of independent LLC misses, resulting in no data dependencies. The table in figure \ref{fig:bwc} explains the worst-case number of dependent misses the controllers might make during a single pass of their algorithms.
+
+\begin{figure}[H]
+	\centering
+	\begin{tabular}{|l|c|p{10cm}|}
+		\hline
+		\textbf{Scheme} & \textbf{Number} & \textbf{Explanation}\\
+		\hline
+		ETM & 2 & When writing 1s to a leaf line whose root bit is 0, the root and leaf lines were not in the tag cache.\\
+		\hline
+		Phoenix & 3 & When writing 1s to a page whose superroot bit is 0, the superroot, root and leaf lines were not in the tag cache.\\
+		\hline
+	\end{tabular}
+	\caption{The worst-case number of dependent memory accesses of the hierarchical table tag controller algorithms.}
+	\label{fig:bwc}
+\end{figure}
+
+Using these values, we can calculate the best- and worst-case DRAM access latency overheads for the different schemes. In the best case, we see 10\% overhead. For the worst case, if $m$ is the miss rate and $c$ is the number of dependent accesses, the formula for the percentage DRAM access latency overhead is as follows:
+\begin{equation}
+	\label{eq:fac}
+	\text{\% Overhead} = m \times (0.1 + (c-1)) \times 100
+\end{equation}
+
+The plot in figure \ref{plot:hw} uses this formula to calculate the bounds for DRAM access latency overhead. Even in the worst cases, the overhead is extremely low.\\
+The plot also reveals that the worst case additional DRAM access latency overhead for the Phoenix scheme is sometimes worse than that of the ETM scheme, due to its additional potential dependent access.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{../plots/basic-bounds-miss}
+	\caption{Best- and worst-case DRAM access latency overhead for the hierarchical table tag controllers.}
+	\label{plot:hw}
+\end{figure}
+
+\subsubsection{Varying Capacity}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.49\textwidth]{../plots/capacity-h264ref-new-miss}
+	\includegraphics[width=0.49\textwidth]{../plots/capacity-omnetpp-new-miss}
+	\includegraphics[width=0.49\textwidth]{../plots/capacity-bzip2-new-miss}
+	\caption{How tag cache size affects miss frequencies of the hierarchical table controllers.}
+	\label{plot:hc}
+\end{figure}
+
+Here, we notice that increasing the capacity of \textit{Efficient Tagged Memory}'s tag controller's cache only really improves performance when going from 16KiB to 32KiB. In the case of the Phoenix controller, increasing the size never helps.
+
+This is because the working set of tags is already essentially covered in full, thanks to the large scope of the root and superroot bits of these schemes. This is why these caches see such low miss rates.
+
+\subsubsection{Varying Ways}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.49\textwidth]{../plots/ways-h264ref-new-miss}
+	\includegraphics[width=0.49\textwidth]{../plots/ways-omnetpp-new-miss}
+	\includegraphics[width=0.49\textwidth]{../plots/ways-bzip2-new-miss}
+	\caption{How the number of ways in the tag cache affects miss frequencies of the hierarchical table controllers.}
+	\label{plot:hm}
+\end{figure}
+
+Increasing the number of ways can improve cache hit rate by eliminating conflict misses; specifically those that were caused by cachelines in the same working set with an equal index evicting each other. If the stride size of an algorithm results in many distinct cachelines with equal indices being frequently accessed, we would expect to see lots of conflict misses when the number of ways is small.\\
+The tag table has a scale of 1:128 with the value portion of DRAM. Thus, for a tag cache with 128 sets and 64B cachelines, the algorithm would have to have a working set that spans across $128 \times 128 \times 64 = 1$MiB to experience a conflict. This is unlikely, but not out of the question. However, with a root table, which has a scale of 1:65536, the working set must span $65536 \times 128 \times 64 = 512$MiB of data, which is exceptional. With a superroot table, the trend continues.
+
+From Figure \ref{plot:hm} we can see that increasing the number of ways beyond 2 hardly helps to improve tag cache hit rate. My theory is that due to the above reasoning, we find that increasing the number of ways in the cache when using a hierarchical scheme hardly helps as we already mitigate conflict misses thanks to compressing the zero tags into a smaller cacheline scope, thus decreasing the chance of a conflict miss.
+
+\subsubsection{Adding a Tag Cache Prefetcher}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.49\textwidth]{../plots/prefetcher-h264ref-new-miss}
+	\includegraphics[width=0.49\textwidth]{../plots/prefetcher-omnetpp-new-miss}
+	\includegraphics[width=0.49\textwidth]{../plots/prefetcher-bzip2-new-miss}
+	\caption{How adding a prefetcher to the tag cache affects miss frequencies of the hierarchical table controllers.}
+	\label{plot:hp}
+\end{figure}
+
+Once again, we find that adding simple prefetchers either has no effect, or makes performance worse.
+
+\section{DRAM Space Consumption}
+\subsection{Theoretical Limits of Tag Table Compression}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{../plots/compression-curr}
+	\caption{Various compression algorithms applied to the tag tables of various workloads.}
+	\label{plot:bc}
+\end{figure}
+
+\subsection{Dynamic DRAM Allocation}
+When attempting to compress information, it is useful to know the limit of compression -- the minimum number of bits required to losslessly decompress that information. I attempted to get an idea of the limits of compression of the tag table by dumping the state of a flat tag table to a file, and running three different compression algorithms on that file. The box plot in figure \ref{plot:bc} was generated by compressing the state of the tag table at 20 different points during the simulation of the basic tag controller handling 50 million LLC misses. We can see that the table can be compressed to between about 0.01\% and 0.1\% of its original size. Whilst these are not absolute lower bounds, we know that they are possible levels of compression that a tag controller scheme might be able to achieve, albeit likely very ambitious to actually do so whilst maintaining reasonable runtime performance.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{../plots/compression-new}
+	\caption{The space consumption of the tag table when using the Phoenix scheme's on-demand DRAM allocation.}
+	\label{plot:pc}
+\end{figure}
+
+Figure \ref{plot:pc} shows how many pages were kept allocated during the handling of the LLC misses, and also this number as a percentage of the entire leaf table. We can see that the compressed sizes varied between about $1.27\%$ and $1.46\%$, which is between $12.7$ and $146$ times larger than what was achieved by the compression algorithms. Whilst there may still be lots of potential for compression, the fact that over $99\%$ of the space consumed by the leaf table could be freed is noteworthy.\\
+We can calculate the physical space consumed by the leaf tables by multiplying the number of pages by the size of a page, 4096B. The DRAM used by the root and superroot tables however must always remain fully allocated. With a 2GiB memory, they consume 5KiB and 512B respectively, so we must add 5.5KiB on top of these values to get the total DRAM space consumption overhead.\\
+The results show that with the help of dynamic DRAM allocation, the leaf table, which was originally 4MiB in size, only needs to consume between $208$ and $240$KiB for these workloads to run under the Phoenix scheme, leaving the total additional DRAM space overhead at between $213.5$ and $245.5$KiB.
+
+\section{Evaluation of the Simulator as a Tool}
+The tag controller simulator provides a framework that allows an architect to implement an algorithm for a tag controller, and evaluate it. Specifically, when paired with ChampSim, it can report the following metrics for a given workload:
+\begin{itemize}
+	\item tag cache access frequency (as a total, and for reads and writes seperately)
+	\item tag cache hit frequency (as a total, and for reads and writes seperately)
+	\item tag cache miss frequency (as a total, and for reads and writes seperately)
+	\item the number of tag cacheline prefetches made (if a prefetcher is enabled)
+	\item the number of useful tag cacheline prefetches (if a prefetcher is enabled)
+	\item the number of useless tag cacheline prefetches (if a prefetcher is enabled)
+\end{itemize}
+From the first two metrics, the hit ratio of the tag cache can be calculated.\\
+On top of this, the accompanying visualisation tool allows an architect to
+visually inspect the state of the tag table and tag cache at points in the simulated
+execution. The tool allows visualisation for all of the three schemes described
+in the Preparation chapter, and it could be extended to visualise other schemes.
+
+Initially, the success criteria of this project were written with the implication that the tag controller simulator alone, as a single program, would be responsible for producing all tag cache metrics. However, after some consideration I decided to use an existing cache simulator, ChampSim, to simulate the cache, and to have the tag controller simulator interface with ChampSim via its output trace file. When combined, the two programs provide a single tool that does indeed provide all of the necessary outputs, given the promised inputs, to meet all success criteria. An example Python script I wrote that combines the two programs by running one after the other can be found at \texttt{/CHERI-Tag-Controller/evaluation/eval-basic.py}.
+
+Additionally, the simulation tool successfully reproduced the results found in \textit{Efficient
+Tagged Memory}. By using the visualisation tool, I was able to easily
+investigate the state of the hierarchical scheme, and with this insight I was
+able to devise my own tag controller scheme.\\
+The framework allowed me to implement my novel scheme with ease -- I was only
+required to provide implementations for three class methods after extending the
+\texttt{Controller} class. I was then able to verify my novel scheme with the
+build-in verification program, and I could then evaluate it by simply providing
+the simulator with a workload.\\
+The promising results of the Phoenix scheme suggest that the tool has genuine
+potential to accelerate innovation in tag controller design.
+
+There are however some drawbacks to the tool:
+\begin{itemize}
+	\item Several interesting parameters, such as the memory size of the simulated workload and cacheline size, cannot be simply changed -- the values of 2GiB and 64B respectively are currently hard-coded into the tool.
+	\item The visualisation tool is not straight forward to extend -- unlike
+	the tag controller simulator, there is not a programmer-friendly framework.
+	\item The images that the visualisation tool are very large (around 100
+	Megapixels), and thus require non-standard image viewers, such as
+	vipsdisp \cite{vipsdisp}, to view them.
+\end{itemize}

@@ -262,6 +262,7 @@ This function was then modified to check after each phase of processing if it ha
 
 \subsection{Microbenchmarks -- Unit Tests}
 I implemented some unit tests to test the correctness of the address translations and access sequences of some of the concrete tag controller implementations. They have the controller handle a single access, and then analyse the sequence of addresses that the controller made in response, asserting that the addresses accessed match what was expected. These microbenchmarks were particularly useful to debug the controllers as I implemented them, as their precision highlighted exactly where the issues lay.
+%MENTION GTEST FRAMEWORK!!!
 
 \subsection{Macrobenchmark -- Trace Verifier}
 The input trace files usefully contain information about the results of reads made to the DRAM tag table during the workload simulation. This allows us to cross-reference the results of reads that our implemented tag controllers produce with those found in the trace file. The trace files contain hundreds of millions (if not more) of read instructions, so if of all of the read results match, then we can say with extreme confidence that our implementation of the tag controller is correct. As part of my project I developed a program that allows the user to provide a reference workload and verify the correctness of a tag controller in this way.

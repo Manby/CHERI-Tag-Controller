@@ -1,4 +1,7 @@
 \documentclass[12pt,a4paper,twoside,openright]{report}
+%TC:group table 0 1
+%TC:group tabular 1 1
+
 \usepackage[pdfborder={0 0 0}]{hyperref}    % turns references into hyperlinks
 \usepackage[margin=25mm]{geometry}  % adjusts page layout
 \setlength{\parindent}{0pt}
@@ -21,6 +24,7 @@
 \usepackage{algorithm}
 \usepackage{minted}[breaklines,linenos]
 \definecolor{codebg}{rgb}{0.9,0.9,0.9}
+\usepackage{pdfpages}
 
 \raggedbottom                           % try to avoid widows and orphans
 \sloppy
@@ -52,7 +56,11 @@
 \addtocategory{preparation}{clcheri}
 \addtocategory{preparation}{morello}
 \addtocategory{preparation}{champsim}
+\addtocategory{preparation}{champsimlicence}
+\addtocategory{preparation}{gtestlicence}
 
+\DeclareBibliographyCategory{evaluation}
+\addtocategory{preparation}{vipsdisp}
 
 \begin{document}
 
@@ -86,12 +94,12 @@ Name:               & \bf Kofi Wilkinson                        \\
 College:            & \bf Homerton College                      \\
 Project Title:      & \bf Next Generation CHERI Tag Controller  \\
 Examination:        & \bf Computer Science Tripos -- Part II, June 2024  \\
-Word Count:         & \bf -- \footnotemark[1]		\\
+Word Count:         & \bf (Intro+Prep+Impl = about 11,000) \footnotemark[1]		\\
 Project Originator: & Dr Jonathan Woodruff              \\
 Supervisor:         & Dr Jonathan Woodruff              \\
 \end{tabular}
 }
-\footnotetext[1]{This word count was computed by \texttt{-}
+\footnotetext[1]{This word count was computed by \texttt{texcount main.tex -inc}
 }
 \stepcounter{footnote}
 
@@ -148,9 +156,9 @@ Date \today
 
 \include{implementation}
 
-%\include{evaluation}
+\include{evaluation}
 
-%\include{conclusions}
+\include{conclusions}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -167,6 +175,6 @@ Date \today
 
 \chapter{Project Proposal}
 
-%\input{proposal}
+\includepdf[pages=-]{../proposal/phase3.pdf}
 
 \end{document}
