@@ -119,9 +119,9 @@ Interestingly, in the case of the bzip2 the difference in performance is incredi
 This might be because this workload has many unset tags, meaning that more there are more superroot bits set to zero resident in the cache. This would increase the effective scope of the cache, which in turn increases the hit rate.
 
 The exact resulting DRAM access latency overhead depends on which accesses missed. Suppose two cache misses occurred during the handling of a single LLC miss. As the accesses in one pass of the tag controller algorithm contain a data dependency, one could not be pipelined with the other. Whilst the former DRAM tag table access could be pipelined with the DRAM data access, the latter DRAM tag table access would have had to wait for the former to complete, resulting in an overhead factor of about 2.1. However, if the two cache misses occurred in the handling of two different LLC misses, then the accesses would be in two different passes of the algorithm, and the two resulting DRAM tag table accesses could both be pipelined with their respective DRAM data accesses, resulting in an overhead factor of about 1.1.\\
-As we do not know exactly which accesses missed, we can only state bounds for the resulting DRAM access latency overhead. In the best case, all of these misses occured during handling of independent LLC misses, resulting in no data dependencies. The table in figure \ref{fig:bwc} explains the worst-case number of dependent misses the controllers might make during a single pass of their algorithms.
+As we do not know exactly which accesses missed, we can only state bounds for the resulting DRAM access latency overhead. In the best case, all of these misses occured during handling of independent LLC misses, resulting in no data dependencies. Table \ref{tab:bwc} explains the worst-case number of dependent misses the controllers might make during a single pass of their algorithms.
 
-\begin{figure}[H]
+\begin{table}[H]
 	\centering
 	\begin{tabular}{|l|c|p{10cm}|}
 		\hline
@@ -133,8 +133,8 @@ As we do not know exactly which accesses missed, we can only state bounds for th
 		\hline
 	\end{tabular}
 	\caption{The worst-case number of dependent memory accesses of the hierarchical table tag controller algorithms.}
-	\label{fig:bwc}
-\end{figure}
+	\label{tab:bwc}
+\end{table}
 
 Using these values, we can calculate the best- and worst-case DRAM access latency overheads for the different schemes. In the best case, we see 10\% overhead. For the worst case, if $m$ is the miss rate and $c$ is the number of dependent accesses, the formula for the percentage DRAM access latency overhead is as follows:
 \begin{equation}
@@ -255,3 +255,8 @@ There are however some drawbacks to the tool:
 	Megapixels), and thus require non-standard image viewers, such as
 	vipsdisp \cite{vipsdisp}, to view them.
 \end{itemize}
+
+
+
+%To keep things fair, I wanted to keep the total size of the two Morello controller caches equal to that of the basic controller's cache (32KiB). I reserved 16KiB for the tag cache, and 16KiB for the zero cache. As the zero cache does not actually store cachelines, more of this space could be used to simply increase the number of sets in the cache.\\
+%Each cacheline uses one word (64 bits; 8B) to store the address-tag of the cacheline. As the zero cache only uses its 16KiB budget to store address-tags (and not actual cachelines), we can have a zero cache with 16KiB/8B/4 ways = 2048 sets.

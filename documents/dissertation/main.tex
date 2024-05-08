@@ -1,6 +1,7 @@
 \documentclass[12pt,a4paper,twoside,openright]{report}
-%TC:group table 0 1
-%TC:group tabular 1 1
+%TC:envir table 0 1
+%TC:envir table* 0 1
+%TC:envir tabular [ignore] word
 
 \usepackage[pdfborder={0 0 0}]{hyperref}    % turns references into hyperlinks
 \usepackage[margin=25mm]{geometry}  % adjusts page layout
@@ -104,22 +105,21 @@ Supervisor:         & Dr Jonathan Woodruff              \\
 \stepcounter{footnote}
 
 
-\section*{Original Aims of the Project}
+\section*{Original aims of the project}
 
-To develop a framework in which a computer architect can implement and evaluate the
-algorithms of a memory access controller for use in the microarchitecture of a
-tagged memory architecture. To also use the framework to evaluate two existing
+To develop a framework in which a computer architect can implement and evaluate
+a memory access controller of a tagged memory system. To also use the framework to evaluate two existing
 tag controller implementations.
 
-\section*{Work Completed}
+\section*{Work completed}
 
-I successfully developed the framework, and used it to evaluate two existing tag
-controller implementations. I also developed an additional visualisation tool
-allowing insight into the workings of the tag controllers to be gained visually.
-I then used these tools to develop a novel tag controller of my own design,
+I successfully developed the framework and used it to evaluate two existing tag
+controller implementations. I also developed a visualisation tool
+for gaining insight into the workings of the tag controllers visually.
+I used these tools to develop a novel tag controller of my own design,
 which I evaluated and compared to the existing ones.
 
-\section*{Special Difficulties}
+\section*{Special difficulties}
 
 None.
 
@@ -150,15 +150,15 @@ Date \today
 
 --
 
-\include{introduction}
+%\include{introduction}
 
-\include{preparation}
+%\include{preparation}
 
 \include{implementation}
 
-\include{evaluation}
+%\include{evaluation}
 
-\include{conclusions}
+%\include{conclusions}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
