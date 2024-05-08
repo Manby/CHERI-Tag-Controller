@@ -34,14 +34,14 @@ if parsed_args.morello == "yes":
     '''
 
     cache_params_t = [
-            (256, 1, None),
-            (128, 2, None),
-            (32, 8, None)
+            (480, 1, None),
+            (240, 2, None),
+            (60, 8, None)
             ]
     cache_params_z = [
-            (256, 1, None),
-            (128, 2, None),
-            (32, 8, None)
+            (480, 1, None),
+            (240, 2, None),
+            (60, 8, None)
             ]
 
 elif parsed_args.morello == "p":

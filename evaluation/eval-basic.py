@@ -52,7 +52,7 @@ for workload in workloads:
         elif scheme == "morello-z":
             # update the cache parameters
             print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
-            champsimConfig(8, 4, None)        # 4-way 512B
+            champsimConfig(120, 4, None)        # 4-way 512B
             print("\n\n")
 
         print("##########  EMULATING SCHEME: " + scheme + "  ##########")
