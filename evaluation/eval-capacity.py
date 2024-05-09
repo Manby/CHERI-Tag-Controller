@@ -21,7 +21,7 @@ if parsed_args.morello == "yes":
     schemes = ["morello-t", "morello-z"]
 
     cache_params_t = [
-            (54, 4, None),
+            (64, 4, None),
             (256, 4, None),
             (512, 4, None)
             ]
@@ -49,6 +49,7 @@ else:
             (512, 4, None)
             ]
 
+champsimConfig(*params_t)
 for workload in workloads:
     curr_workload_stats = {}
     initial_state = workload[1]+'/trace_initial_state.bin'
@@ -67,7 +68,6 @@ for workload in workloads:
                 # first do tag cache
                 # update the cache parameters
                 print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
-                champsimConfig(*params_t)
                 print("\n\n")
 
                 scheme = "morello-t"
@@ -83,10 +83,11 @@ for workload in workloads:
             if skip > 0:
                 skip -= 1
             else:
+                pass
+                '''
                 # next do zero cache
                 # update the cache parameters
                 print("~~~~~ Reconfiguring ChampSim ~~~~~\n")
-                champsimConfig(*params_z)
                 print("\n\n")
                 scheme = "morello-z"
                 print("##########  EMULATING SCHEME: " + scheme + "  ##########")
@@ -97,6 +98,7 @@ for workload in workloads:
                 curr_workload_stats[str((params_t, params_z))] = curr_params_stats
                 stats[workload[0]] = curr_workload_stats
                 save(stats, save_name)
+                '''
 
     else:
         for params in cache_params:
