@@ -21,14 +21,14 @@ if parsed_args.morello == "yes":
     schemes = ["morello-t", "morello-z"]
 
     cache_params_t = [
-            (60, 4, None),
-            (240, 4, None),
-            (480, 4, None)
+            (54, 4, None),
+            (256, 4, None),
+            (512, 4, None)
             ]
     cache_params_z = [
-            (60, 4, None),
-            (240, 4, None),
-            (480, 4, None)
+            (64, 4, None),
+            (256, 4, None),
+            (512, 4, None)
             ]
 
 elif parsed_args.morello == "p":

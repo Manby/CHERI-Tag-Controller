@@ -21,13 +21,13 @@ if parsed_args.morello == "yes":
     schemes = ["morello-t", "morello-z"]
 
     cache_params_t = [
-            (120, 4, 'ip_stride'),
-            (120, 4, 'next_line'),
+            (128, 4, 'ip_stride'),
+            (128, 4, 'next_line'),
             #(64, 4, 'va_ampm_lite')
             ]
     cache_params_z = [
-            (120, 4, 'ip_stride'),
-            (120, 4, 'next_line'),
+            (128, 4, 'ip_stride'),
+            (128, 4, 'next_line'),
             #(64, 4, 'va_ampm_lite')
             ]
 
