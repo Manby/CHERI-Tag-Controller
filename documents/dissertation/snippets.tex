@@ -1,0 +1,39 @@
+\chapter{Code snippets}
+
+\makeatletter
+\renewcommand{\ALG@name}{Code Snippet}
+\makeatother
+\begin{algorithm}[H]
+	\centering
+	\subimport{code}{sim}
+	\caption{\texttt{Simulator::processTrace}}
+	\label{code:sim}
+\end{algorithm}
+
+\begin{algorithm}[H]
+	\centering
+	\subimport{code}{bas}
+	\caption{\texttt{BaselineController} class}
+	\label{code:bas}
+\end{algorithm}
+
+\begin{algorithm}[H]
+	\centering
+	\subimport{code}{ets}
+	\caption{\texttt{ETMController::setup}}
+	\label{code:ets}
+\end{algorithm}
+
+\begin{algorithm}[H]
+	\centering
+	\subimport{code}{tvf}
+	\caption{\texttt{verify.cpp}'s \texttt{verify} function}
+	\label{code:tvf}
+\end{algorithm}
+
+\begin{algorithm}[H]
+	\centering
+	\subimport{code}{tcv}
+	\caption{\texttt{verify.cpp}'s \texttt{crossVerify} function}
+	\label{code:tcv}
+\end{algorithm}
